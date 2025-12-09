@@ -7,7 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class AiServiceApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(AiServiceApplication.class, args);
+		SpringApplication.run(AiServiceApplication.class, args); //Alex a aruncat o privire doar momentan :))
 	}
 
 }
