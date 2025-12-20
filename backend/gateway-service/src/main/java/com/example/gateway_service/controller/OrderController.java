@@ -2,6 +2,8 @@ package com.example.gateway_service.controller;
 
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,16 +16,16 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.gateway_service.messaging.OrderCommandPublisher;
 import com.example.gateway_service.messaging.dto.PlaceOrderCommand;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
 @RestController
 @RequestMapping("/api/orders")
-@RequiredArgsConstructor
-@Slf4j
 public class OrderController {
+    private static final Logger log = LoggerFactory.getLogger(OrderController.class);
     
     private final OrderCommandPublisher orderCommandPublisher;
+
+    public OrderController(OrderCommandPublisher orderCommandPublisher) {
+        this.orderCommandPublisher = orderCommandPublisher;
+    }
     
     @PostMapping
     public ResponseEntity<Map<String, String>> placeOrder(@RequestBody PlaceOrderCommand command) {

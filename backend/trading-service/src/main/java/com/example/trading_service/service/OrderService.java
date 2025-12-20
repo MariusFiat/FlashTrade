@@ -1,5 +1,7 @@
 package com.example.trading_service.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.example.trading_service.dto.OrderResponse;
@@ -7,11 +9,9 @@ import com.example.trading_service.entities.Order;
 import com.example.trading_service.messaging.dto.PlaceOrderCommand;
 import com.example.trading_service.repository.OrderRepository;
 
-import lombok.extern.slf4j.Slf4j;
-
 @Service
-@Slf4j
 public class OrderService {
+    private static final Logger log = LoggerFactory.getLogger(OrderService.class);
     private final OrderRepository orderRepository;
 
     public OrderService(OrderRepository orderRepository) {

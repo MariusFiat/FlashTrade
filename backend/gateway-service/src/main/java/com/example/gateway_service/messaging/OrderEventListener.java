@@ -1,17 +1,15 @@
 package com.example.gateway_service.messaging;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 import com.example.gateway_service.messaging.dto.OrderCreatedEvent;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
 @Component
-@RequiredArgsConstructor
-@Slf4j
 public class OrderEventListener {
+    private static final Logger log = LoggerFactory.getLogger(OrderEventListener.class);
     
     @RabbitListener(queues = RabbitMQConfig.GATEWAY_ORDER_EVENT_QUEUE)
     public void handleOrderEvent(OrderCreatedEvent event) {

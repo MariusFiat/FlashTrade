@@ -1,5 +1,7 @@
 package com.example.trading_service.messaging;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
@@ -7,15 +9,15 @@ import com.example.trading_service.config.RabbitMQConfig;
 import com.example.trading_service.dto.OrderResponse;
 import com.example.trading_service.messaging.dto.OrderCreatedEvent;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
 @Component
-@RequiredArgsConstructor
-@Slf4j
 public class OrderEventPublisher {
+    private static final Logger log = LoggerFactory.getLogger(OrderEventPublisher.class);
     
     private final RabbitTemplate rabbitTemplate;
+
+    public OrderEventPublisher(RabbitTemplate rabbitTemplate) {
+        this.rabbitTemplate = rabbitTemplate;
+    }
     
     public void publishOrderCreated(OrderResponse order, String correlationId, String status, String errorMessage) {
         OrderCreatedEvent event = new OrderCreatedEvent(

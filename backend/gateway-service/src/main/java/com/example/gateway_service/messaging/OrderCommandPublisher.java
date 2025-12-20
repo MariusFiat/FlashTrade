@@ -1,18 +1,22 @@
 package com.example.gateway_service.messaging;
 
-import com.example.gateway_service.messaging.dto.PlaceOrderCommand;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
-import java.util.UUID;
+import com.example.gateway_service.messaging.dto.PlaceOrderCommand;
 
 @Component
-@RequiredArgsConstructor
-@Slf4j
 public class OrderCommandPublisher {
+    private static final Logger log = LoggerFactory.getLogger(OrderCommandPublisher.class);
     private final RabbitTemplate rabbitTemplate;
+
+    public OrderCommandPublisher(RabbitTemplate rabbitTemplate) {
+        this.rabbitTemplate = rabbitTemplate;
+    }
 
     public String publishPlaceOrderCommand(PlaceOrderCommand command) {
         // Generate correlation ID for tracking
