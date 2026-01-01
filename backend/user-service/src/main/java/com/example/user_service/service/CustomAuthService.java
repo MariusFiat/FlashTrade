@@ -1,0 +1,64 @@
+package com.example.user_service.service;
+
+import com.example.user_service.entities.User;
+import com.example.user_service.repository.UserRepository;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.security.Key;
+import java.util.Date;
+
+@Service
+public class CustomAuthService {
+
+    private final UserRepository userRepository;
+    private final BCryptPasswordEncoder passwordEncoder;
+
+    @Value("${JWT_SECRET}")
+    private String jwtSecret;
+
+    public CustomAuthService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    public String register(String email, String password) {
+        if (userRepository.findByEmail(email).isPresent()) {
+            return "{\"error\": \"Utilizatorul există deja!\"}";
+        }
+        User user = new User();
+        user.setEmail(email);
+        user.setPassword(passwordEncoder.encode(password));
+        userRepository.save(user);
+        return "{\"message\": \"Înregistrare reușită!\"}";
+    }
+
+    public String login(String email, String password) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Utilizator negăsit"));
+
+        if (passwordEncoder.matches(password, user.getPassword())) {
+            return generateJwtToken(email);
+        } else {
+            return "{\"error\": \"Parolă incorectă!\"}";
+        }
+    }
+
+    private String generateJwtToken(String email) {
+        // Generăm cheia din secretul din .env
+        Key key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+
+        String token = Jwts.builder()
+                .setSubject(email)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + 86400000)) // Expira in 24h
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+
+        return "{\"access_token\": \"" + token + "\"}";
+    }
+}
