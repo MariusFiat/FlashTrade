@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.example.trading_service.dto.OrderResponse;
-import com.example.trading_service.entities.Order;
+import com.example.trading_service.entities.order.Order;
 import com.example.trading_service.messaging.dto.PlaceOrderCommand;
 import com.example.trading_service.repository.OrderRepository;
 
@@ -24,7 +24,7 @@ public class OrderService {
 
         Order order = new Order();
         order.setSymbol(command.getSymbol());
-        order.setQuantity(command.getQuantity());
+        order.setOriginalQty(command.getQuantity());
         order.setPrice(command.getPrice());
         order.setType(command.getOrderType());
 
@@ -35,7 +35,7 @@ public class OrderService {
         return new OrderResponse(
                 order.getId(),
                 order.getSymbol(),
-                order.getQuantity(),
+                order.getOriginalQty(),
                 order.getPrice(),
                 order.getType(),
                 order.getCreatedAt()

@@ -1,14 +1,15 @@
 package com.example.trading_service.messaging.dto;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
-import com.example.trading_service.entities.OrderType;
+import com.example.trading_service.entities.order.OrderType;
 
 public class OrderCreatedEvent {
     private Long orderId;
     private String symbol;
     private int quantity;
-    private double price;
+    private BigDecimal price;
     private OrderType orderType;
     private String userId;
     private Instant createdAt;
@@ -19,7 +20,7 @@ public class OrderCreatedEvent {
     public OrderCreatedEvent() {
     }
 
-    public OrderCreatedEvent(Long orderId, String symbol, int quantity, double price, OrderType orderType, String userId, Instant createdAt, String correlationId, String status, String errorMessage) {
+    public OrderCreatedEvent(Long orderId, String symbol, int quantity, BigDecimal price, OrderType orderType, String userId, Instant createdAt, String correlationId, String status, String errorMessage) {
         this.orderId = orderId;
         this.symbol = symbol;
         this.quantity = quantity;
@@ -56,11 +57,11 @@ public class OrderCreatedEvent {
         this.quantity = quantity;
     }
 
-    public double getPrice() {
+    public BigDecimal getPrice() {
         return price;
     }
 
-    public void setPrice(double price) {
+    public void setPrice(BigDecimal price) {
         this.price = price;
     }
 

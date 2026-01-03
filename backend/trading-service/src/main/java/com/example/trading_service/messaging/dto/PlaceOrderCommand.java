@@ -1,11 +1,13 @@
 package com.example.trading_service.messaging.dto;
 
-import com.example.trading_service.entities.OrderType;
+import com.example.trading_service.entities.order.OrderType;
+
+import java.math.BigDecimal;
 
 public class PlaceOrderCommand {
     private String symbol;
     private int quantity;
-    private double price;
+    private BigDecimal price;
     private OrderType orderType;
     private String userId;  // To track who placed the order
     private String correlationId;  // To track the request-response
@@ -13,7 +15,7 @@ public class PlaceOrderCommand {
     public PlaceOrderCommand() {
     }
 
-    public PlaceOrderCommand(String symbol, int quantity, double price, OrderType orderType, String userId, String correlationId) {
+    public PlaceOrderCommand(String symbol, int quantity, BigDecimal price, OrderType orderType, String userId, String correlationId) {
         this.symbol = symbol;
         this.quantity = quantity;
         this.price = price;
@@ -38,11 +40,11 @@ public class PlaceOrderCommand {
         this.quantity = quantity;
     }
 
-    public double getPrice() {
+    public BigDecimal getPrice() {
         return price;
     }
 
-    public void setPrice(double price) {
+    public void setPrice(BigDecimal price) {
         this.price = price;
     }
 

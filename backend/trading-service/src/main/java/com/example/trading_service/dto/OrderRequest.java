@@ -1,6 +1,6 @@
 package com.example.trading_service.dto;
 
-import com.example.trading_service.entities.OrderType;
+import com.example.trading_service.entities.order.OrderType;
 
 public class OrderRequest {
     private String symbol;
