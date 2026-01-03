@@ -1,4 +1,4 @@
-package com.example.gateway_service.messaging;
+package com.example.trading_service.config;
 
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
@@ -18,8 +18,9 @@ public class RabbitMQConfig {
     public static final String TRADING_COMMANDS_EXCHANGE = "trading.commands.exchange";
     public static final String TRADING_EVENTS_EXCHANGE = "trading.events.exchange";
     
-    // Queue names for Gateway to receive events
-    public static final String GATEWAY_ORDER_EVENT_QUEUE = "gateway.order.event.queue";
+    // Queue names
+    public static final String ORDER_COMMAND_QUEUE = "order.command.queue";
+    public static final String ORDER_EVENT_QUEUE = "order.event.queue";
     
     // Routing keys
     public static final String ORDER_PLACE_KEY = "order.place";
@@ -50,32 +51,40 @@ public class RabbitMQConfig {
         return new TopicExchange(TRADING_COMMANDS_EXCHANGE);
     }
     
-    // Events Exchange (Trading Service -> Gateway)
+    // Events Exchange (Trading Service -> Gateway/Other Services)
     @Bean
     public TopicExchange tradingEventsExchange() {
         return new TopicExchange(TRADING_EVENTS_EXCHANGE);
     }
     
-    // Queue for Gateway to receive order events
+    // Command Queue for receiving orders from gateway
     @Bean
-    public Queue gatewayOrderEventQueue() {
-        return new Queue(GATEWAY_ORDER_EVENT_QUEUE, true);
+    public Queue orderCommandQueue() {
+        return new Queue(ORDER_COMMAND_QUEUE, true);
     }
     
-    // Binding: Events Exchange -> Gateway Event Queue
+    // Binding: Commands Exchange -> Order Command Queue
     @Bean
-    public Binding orderCreatedEventBinding() {
+    public Binding orderPlaceBinding() {
         return BindingBuilder
-                .bind(gatewayOrderEventQueue())
-                .to(tradingEventsExchange())
-                .with(ORDER_CREATED_KEY);
+                .bind(orderCommandQueue())
+                .to(tradingCommandsExchange())
+                .with(ORDER_PLACE_KEY);
     }
     
     @Bean
-    public Binding orderFailedEventBinding() {
+    public Binding orderCancelBinding() {
         return BindingBuilder
-                .bind(gatewayOrderEventQueue())
-                .to(tradingEventsExchange())
-                .with(ORDER_FAILED_KEY);
+                .bind(orderCommandQueue())
+                .to(tradingCommandsExchange())
+                .with(ORDER_CANCEL_KEY);
+    }
+    
+    @Bean
+    public Binding orderUpdateBinding() {
+        return BindingBuilder
+                .bind(orderCommandQueue())
+                .to(tradingCommandsExchange())
+                .with(ORDER_UPDATE_KEY);
     }
 }

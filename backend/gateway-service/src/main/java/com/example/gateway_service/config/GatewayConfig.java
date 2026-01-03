@@ -10,10 +10,8 @@ public class GatewayConfig {
     @Bean
     public RouteLocator routes(RouteLocatorBuilder builder) {
         return builder.routes()
-                .route("trading-service", r -> r
-                        .path("/api/trading/**")
-                        .filters(f -> f.stripPrefix(2))
-                        .uri("http://localhost:8081"))
+                // Trading service now uses RabbitMQ only, no REST routing needed
+                // Orders are handled through /api/orders controller in gateway
                 .route("user-service", r -> r
                         .path("/api/users/**")
                         .filters(f -> f.stripPrefix(2))
