@@ -13,11 +13,9 @@ import java.util.Map;
 public class CustomAuthController {
 
     private final CustomAuthService authService;
-    private final UserService userService;
 
-    public CustomAuthController(CustomAuthService authService, UserService userService) {
+    public CustomAuthController(CustomAuthService authService) {
         this.authService = authService;
-        this.userService = userService;
     }
 
     @PostMapping("/register")
@@ -28,15 +26,5 @@ public class CustomAuthController {
     @PostMapping("/login")
     public String login(@RequestBody Map<String, String> payload) {
         return authService.login(payload.get("email"), payload.get("password"));
-    }
-
-    @GetMapping("/user_details")
-    public String infoUser(Authentication authentication) {
-        //Extract the user from the auth obj
-        User user = userService.getCurrentUser(authentication);
-        Long userId = user.getId();
-        String email = user.getEmail();
-
-        return "You are logged in as " + email + " id: " + userId;
     }
 }
