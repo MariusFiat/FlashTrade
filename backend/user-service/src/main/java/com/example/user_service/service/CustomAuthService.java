@@ -61,4 +61,16 @@ public class CustomAuthService {
 
         return "{\"access_token\": \"" + token + "\"}";
     }
+
+    //Add token validation
+    public String validateTokenAndGetEmail(String token) {
+        Key key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+
+        return Jwts.parserBuilder()
+                .setSigningKey(key) //JWT_SECRET .env
+                .build()
+                .parseClaimsJws(token) //Parse the generated token
+                .getBody()
+                .getSubject(); //Extract the email from token
+    }
 }
