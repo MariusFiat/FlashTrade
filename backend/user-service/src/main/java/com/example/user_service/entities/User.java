@@ -17,4 +17,8 @@ public class User {
 
     @Column(nullable = false)
     private String password; // Aici vom stoca hash-ul (parola criptată)
+
+    @OneToOne(cascade = CascadeType.ALL) //Delete the user_details too if this user is deleted.
+    @JoinColumn(name = "user_details_id", referencedColumnName = "id")
+    private UserDetails userDetails;
 }

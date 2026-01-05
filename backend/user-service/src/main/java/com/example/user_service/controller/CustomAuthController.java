@@ -20,7 +20,7 @@ public class CustomAuthController {
 
     @PostMapping("/register")
     public String register(@RequestBody Map<String, String> payload) {
-        return authService.register(payload.get("email"), payload.get("password"));
+        return authService.register(payload.get("email"), payload.get("password"), payload.get("firstName"), payload.get("lastName"));
     }
 
     @PostMapping("/login")

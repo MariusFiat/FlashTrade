@@ -1,6 +1,8 @@
 package com.example.user_service.service;
 
 import com.example.user_service.entities.User;
+import com.example.user_service.entities.UserDetails;
+import com.example.user_service.repository.UserDetailsRepository;
 import com.example.user_service.repository.UserRepository;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -17,22 +19,31 @@ public class CustomAuthService {
 
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final UserDetailsRepository userDetailsRepository;
 
     @Value("${JWT_SECRET}")
     private String jwtSecret;
 
-    public CustomAuthService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder) {
+    public CustomAuthService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder, UserDetailsRepository userDetailsRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.userDetailsRepository = userDetailsRepository;
     }
 
-    public String register(String email, String password) {
+    public String register(String email, String password, String firstName, String lastName) {
         if (userRepository.findByEmail(email).isPresent()) {
             return "{\"error\": \"Utilizatorul există deja!\"}";
         }
         User user = new User();
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(password));
+
+        UserDetails userDetails = new UserDetails();
+        userDetails.setFirstName(firstName);
+        userDetails.setLastName(lastName);
+        userDetailsRepository.save(userDetails);
+
+        user.setUserDetails(userDetails);
         userRepository.save(user);
         return "{\"message\": \"Înregistrare reușită!\"}";
     }
