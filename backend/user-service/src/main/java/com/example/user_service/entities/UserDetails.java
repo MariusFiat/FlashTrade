@@ -20,4 +20,8 @@ public class UserDetails {
 
     @Column(nullable = true)
     private String phoneNumber;
+
+    @OneToOne(cascade =  CascadeType.ALL)
+    @JoinColumn(name = "wallet_id", referencedColumnName = "id")
+    private Wallet wallet;
 }

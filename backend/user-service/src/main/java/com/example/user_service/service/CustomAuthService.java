@@ -2,6 +2,7 @@ package com.example.user_service.service;
 
 import com.example.user_service.entities.User;
 import com.example.user_service.entities.UserDetails;
+import com.example.user_service.entities.Wallet;
 import com.example.user_service.repository.UserDetailsRepository;
 import com.example.user_service.repository.UserRepository;
 import io.jsonwebtoken.Claims;
@@ -43,6 +44,9 @@ public class CustomAuthService {
         UserDetails userDetails = new UserDetails();
         userDetails.setFirstName(firstName);
         userDetails.setLastName(lastName);
+
+        Wallet wallet = new Wallet();
+        userDetails.setWallet(wallet);
         userDetailsRepository.save(userDetails);
 
         user.setUserDetails(userDetails);

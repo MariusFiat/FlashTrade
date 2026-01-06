@@ -2,6 +2,7 @@ package com.example.user_service.controller;
 
 import com.example.user_service.entities.User;
 import com.example.user_service.entities.UserDetails;
+import com.example.user_service.entities.Wallet;
 import com.example.user_service.repository.UserDetailsRepository;
 import com.example.user_service.repository.UserRepository;
 import com.example.user_service.service.CustomAuthService;
@@ -108,5 +109,25 @@ public class UserController {
         else{
             return "The user was not found.";
         }
+    }
+
+    @GetMapping("/get_wallet_info")
+    public Map<String, String> getWalletInfo(Authentication authentication) {
+        User user = userService.getCurrentUser(authentication);
+        Map<String, String> map = new HashMap<>();
+
+        String availableBalance = user.getUserDetails().getWallet().getBalance().toString();
+        map.put("availableBalance", availableBalance);
+
+        String totalDeposits = user.getUserDetails().getWallet().getTotalDeposit().toString();
+        map.put("totalDeposits", totalDeposits);
+
+        String totalWithdrawals = user.getUserDetails().getWallet().getTotalWithdrawal().toString();
+        map.put("totalWithdrawals", totalWithdrawals);
+
+        String pandingBalance = user.getUserDetails().getWallet().getPandingBalance().toString();
+        map.put("pandingBalance", pandingBalance);
+
+        return map;
     }
 }
