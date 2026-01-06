@@ -6,11 +6,13 @@ import com.example.user_service.repository.UserDetailsRepository;
 import com.example.user_service.repository.UserRepository;
 import com.example.user_service.service.CustomAuthService;
 import com.example.user_service.service.UserService;
+import jakarta.transaction.Transactional;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/user_info")
@@ -81,5 +83,28 @@ public class UserController {
 
         //Save the new data
         userRepository.save(currentUser);
+    }
+
+    @DeleteMapping("/delete_me")
+    public String deleteMe(Authentication authentication) {
+        if(authentication == null){
+            return "You have to be logged in to delete your account.";
+        }
+
+        String email = authentication.getName();
+        userRepository.deleteByEmail(email);
+        return "Your account has been deleted.";
+    }
+
+    @DeleteMapping("/delete_user")
+    public String deleteUser(@RequestParam String email) {
+        Optional<User> user = userRepository.findByEmail(email);
+        if(user.isPresent()) {
+            userRepository.deleteById(user.get().getId());
+            return "The user has been deleted.";
+        }
+        else{
+            return "The user was not found.";
+        }
     }
 }
