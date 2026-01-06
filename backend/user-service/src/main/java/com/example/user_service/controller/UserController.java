@@ -7,6 +7,7 @@ import com.example.user_service.repository.UserRepository;
 import com.example.user_service.service.CustomAuthService;
 import com.example.user_service.service.UserService;
 import jakarta.transaction.Transactional;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -97,6 +98,7 @@ public class UserController {
     }
 
     @DeleteMapping("/delete_user")
+    @PreAuthorize("hasRole('ROLE_ADMIN')") //Just an admin account can delete another users.
     public String deleteUser(@RequestParam String email) {
         Optional<User> user = userRepository.findByEmail(email);
         if(user.isPresent()) {
