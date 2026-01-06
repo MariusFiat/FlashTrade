@@ -29,105 +29,34 @@ public class UserController {
         this.userRepository = userRepository;
     }
 
-    @GetMapping("/user_details")
-    public String infoUser(Authentication authentication) {
-        //Extract the user from the auth obj
-        User user = userService.getCurrentUser(authentication);
-        Long userId = user.getId();
-        String email = user.getEmail();
-
-        return "You are logged in as " + email + " id: " + userId;
-    }
-
     @GetMapping("/list_user_details")
     public Map<String, String> listUserDetails(Authentication authentication) {
-        User user = userService.getCurrentUser(authentication);
-        Long userId = user.getId();
-        String email = user.getEmail();
-        String firstName = user.getUserDetails().getFirstName();
-        String lastName = user.getUserDetails().getLastName();
-        String phoneNumber = user.getUserDetails().getPhoneNumber();
-
-        Map<String, String> map = new HashMap<>();
-        map.put("email", email);
-        map.put("firstName", firstName);
-        map.put("lastName", lastName);
-        map.put("phoneNumber", phoneNumber);
-        return map;
+        return userService.listUserDetails(authentication);
     }
 
     @PostMapping("/edit_user_details")
     public void editUserDetails(@RequestBody Map<String, String> map, Authentication authentication) {
-        User currentUser = userService.getCurrentUser(authentication);
-
-        UserDetails details = currentUser.getUserDetails();
-        if (details == null) {
-            details = new UserDetails();
-        }
-
-        if(map.get("email") != null) {
-            currentUser.setEmail(map.get("email"));
-        }
-
-        if(map.get("firstName") != null) {
-            details.setFirstName(map.get("firstName"));
-        }
-
-        if(map.get("lastName") != null) {
-            details.setLastName(map.get("lastName"));
-        }
-
-        if(map.get("phoneNumber") != null) {
-            details.setPhoneNumber(map.get("phoneNumber"));
-        }
-
-        currentUser.setUserDetails(details); //Save the new details
-
-        //Save the new data
-        userRepository.save(currentUser);
+        userService.editUserDatails(map, authentication);
     }
 
     @DeleteMapping("/delete_me")
     public String deleteMe(Authentication authentication) {
-        if(authentication == null){
-            return "You have to be logged in to delete your account.";
-        }
-
-        String email = authentication.getName();
-        userRepository.deleteByEmail(email);
-        return "Your account has been deleted.";
+        return userService.deleteMe(authentication);
     }
 
     @DeleteMapping("/delete_user")
     @PreAuthorize("hasRole('ROLE_ADMIN')") //Just an admin account can delete another users.
     public String deleteUser(@RequestParam String email) {
-        Optional<User> user = userRepository.findByEmail(email);
-        if(user.isPresent()) {
-            userRepository.deleteById(user.get().getId());
-            return "The user has been deleted.";
-        }
-        else{
-            return "The user was not found.";
-        }
+        return  userService.deleteUser(email);
     }
 
     @GetMapping("/get_wallet_info")
     public Map<String, String> getWalletInfo(Authentication authentication) {
-        User user = userService.getCurrentUser(authentication);
-        Map<String, String> map = new HashMap<>();
+        return userService.getWalletInfo(authentication);
+    }
 
-        String availableBalance = user.getUserDetails().getWallet().getBalance().toString();
-        map.put("availableBalance", availableBalance);
-
-        String totalDeposits = user.getUserDetails().getWallet().getTotalDeposit().toString();
-        map.put("totalDeposits", totalDeposits);
-
-        String totalWithdrawals = user.getUserDetails().getWallet().getTotalWithdrawal().toString();
-        map.put("totalWithdrawals", totalWithdrawals);
-
-        String pandingBalance = user.getUserDetails().getWallet().getPandingBalance().toString();
-        map.put("pandingBalance", pandingBalance);
-
-        return map;
+    @PostMapping("/deposit")
+    public String deposit(@RequestParam double amount, Authentication authentication) {
+        return userService.updateTotalDeposits(amount, authentication) + "\n" + userService.deposit(amount, authentication) + "\n";
     }
 }
