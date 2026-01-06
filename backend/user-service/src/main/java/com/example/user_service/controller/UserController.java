@@ -59,4 +59,19 @@ public class UserController {
     public String deposit(@RequestParam double amount, Authentication authentication) {
         return userService.updateTotalDeposits(amount, authentication) + "\n" + userService.deposit(amount, authentication) + "\n";
     }
+
+    @PostMapping("/withdrawal")
+    public boolean withdrawal(@RequestParam double amount, Authentication authentication) {
+        return userService.withdrawal(amount, authentication) && userService.updateTotalWithdrawals(amount, authentication);
+    }
+
+    @PostMapping("/reserve_funds")
+    public boolean reserveFunds(@RequestParam double amount, Authentication authentication) {
+        return userService.reserveFunds(amount, authentication);
+    }
+
+    @PostMapping("/release_reserved_funds")
+    public boolean releaseReservedFunds(@RequestParam double amount, Authentication authentication) {
+        return userService.releaseFunds(amount, authentication);
+    }
 }

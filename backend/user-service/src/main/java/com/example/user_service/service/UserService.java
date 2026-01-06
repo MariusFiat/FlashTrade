@@ -123,4 +123,54 @@ public class UserService {
         map.put("phoneNumber", phoneNumber);
         return map;
     }
+
+    public boolean withdrawal(double amount, Authentication authentication) {
+        User user = getCurrentUser(authentication);
+        if(user.getUserDetails().getWallet().getBalance() >= amount){
+            user.getUserDetails().getWallet().setBalance(user.getUserDetails().getWallet().getBalance() - amount);
+            userRepository.save(user);
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+
+    public boolean updateTotalWithdrawals(double amount, Authentication authentication) {
+        User user = getCurrentUser(authentication);
+        if(user.getUserDetails().getWallet().getBalance() >= amount){
+            user.getUserDetails().getWallet().setTotalWithdrawal(user.getUserDetails().getWallet().getTotalWithdrawal() + amount);
+            userRepository.save(user);
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+
+    public boolean reserveFunds(double amount, Authentication authentication) {
+        User user = getCurrentUser(authentication);
+        if(user.getUserDetails().getWallet().getBalance() >= amount){
+            user.getUserDetails().getWallet().setBalance(user.getUserDetails().getWallet().getBalance() - amount);
+            user.getUserDetails().getWallet().setPandingBalance(user.getUserDetails().getWallet().getPandingBalance() + amount);
+            userRepository.save(user);
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+
+    public boolean releaseFunds(double amount, Authentication authentication) {
+        User user = getCurrentUser(authentication);
+        if(user.getUserDetails().getWallet().getPandingBalance() >= amount){
+            user.getUserDetails().getWallet().setPandingBalance(user.getUserDetails().getWallet().getPandingBalance() - amount);
+            user.getUserDetails().getWallet().setBalance(user.getUserDetails().getWallet().getBalance() + amount);
+            userRepository.save(user);
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
 }
