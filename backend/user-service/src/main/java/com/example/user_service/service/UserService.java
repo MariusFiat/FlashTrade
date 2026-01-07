@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,16 @@ public class UserService {
     public String deposit(double amount, Authentication authentication) {
         User user = getCurrentUser(authentication);
         user.getUserDetails().getWallet().setBalance(user.getUserDetails().getWallet().getBalance() + amount);
+
+        //Update transaction history
+        TransactionHistory transactionHistory = new TransactionHistory();
+        transactionHistory.setWallet(user.getUserDetails().getWallet());
+        transactionHistory.setAmount(amount);
+        transactionHistory.setTimestamp(LocalDateTime.now());
+        transactionHistory.setActionType("Deposit");
+        transactionHistory.setStatus("Completed");
+
+        this.transactionHistoryRepository.save(transactionHistory);
         userRepository.save(user);
         return "Deposit action fulfilled!";
     }
@@ -135,12 +146,24 @@ public class UserService {
 
     public boolean withdrawal(double amount, Authentication authentication) {
         User user = getCurrentUser(authentication);
+
+        //Update the transaction history
+        TransactionHistory transactionHistory = new TransactionHistory();
+        transactionHistory.setAmount(amount);
+        transactionHistory.setWallet(user.getUserDetails().getWallet());
+        transactionHistory.setTimestamp(LocalDateTime.now());
+        transactionHistory.setActionType("Withdrawal");
+
         if(user.getUserDetails().getWallet().getBalance() >= amount){
             user.getUserDetails().getWallet().setBalance(user.getUserDetails().getWallet().getBalance() - amount);
+            transactionHistory.setStatus("Completed");
+            transactionHistoryRepository.save(transactionHistory);
             userRepository.save(user);
             return true;
         }
         else{
+            transactionHistory.setStatus("Rejected");
+            transactionHistoryRepository.save(transactionHistory);
             return false;
         }
     }
@@ -185,10 +208,7 @@ public class UserService {
 
     public List<TransactionHistory> getTransactions(Authentication authentication) {
         User user = getCurrentUser(authentication);
-        Map<String, String> map = new HashMap<>();
-
         List<TransactionHistory> transactions = transactionHistoryRepository.findTransactionsByWalletId(user.getUserDetails().getWallet().getId());
-
         return transactions;
     }
 }

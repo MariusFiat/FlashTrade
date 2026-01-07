@@ -77,7 +77,7 @@ public class UserController {
         return userService.releaseFunds(amount, authentication);
     }
 
-    @GetMapping("get_transactions")
+    @GetMapping("/get_transactions")
     public List<TransactionHistory> getTransactions(Authentication authentication) {
         return userService.getTransactions(authentication);
     }
