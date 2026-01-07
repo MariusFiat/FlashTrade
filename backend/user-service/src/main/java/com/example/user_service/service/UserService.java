@@ -1,13 +1,17 @@
 package com.example.user_service.service;
 
+import com.example.user_service.entities.TransactionHistory;
 import com.example.user_service.entities.User;
 import com.example.user_service.entities.UserDetails;
+import com.example.user_service.entities.Wallet;
+import com.example.user_service.repository.TransactionHistoryRepository;
 import com.example.user_service.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -16,6 +20,11 @@ public class UserService {
 
     @Autowired
     private UserRepository userRepository;
+    private final TransactionHistoryRepository transactionHistoryRepository;
+
+    public UserService(TransactionHistoryRepository transactionHistoryRepository) {
+        this.transactionHistoryRepository = transactionHistoryRepository;
+    }
 
     public User getCurrentUser(Authentication authentication) {
         if (authentication == null) return null;
@@ -172,5 +181,14 @@ public class UserService {
         else{
             return false;
         }
+    }
+
+    public List<TransactionHistory> getTransactions(Authentication authentication) {
+        User user = getCurrentUser(authentication);
+        Map<String, String> map = new HashMap<>();
+
+        List<TransactionHistory> transactions = transactionHistoryRepository.findTransactionsByWalletId(user.getUserDetails().getWallet().getId());
+
+        return transactions;
     }
 }

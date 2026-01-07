@@ -3,6 +3,9 @@ package com.example.user_service.entities;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "wallet")
 @Data
@@ -26,4 +29,7 @@ public class Wallet {
 
     @Column(nullable = false)
     private String currency = "DOLLARS";
+
+    @OneToMany(mappedBy = "wallet", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TransactionHistory> history = new ArrayList<>();
 }

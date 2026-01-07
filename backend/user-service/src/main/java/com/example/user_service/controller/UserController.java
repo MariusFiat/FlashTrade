@@ -1,5 +1,6 @@
 package com.example.user_service.controller;
 
+import com.example.user_service.entities.TransactionHistory;
 import com.example.user_service.entities.User;
 import com.example.user_service.entities.UserDetails;
 import com.example.user_service.entities.Wallet;
@@ -13,6 +14,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -73,5 +75,10 @@ public class UserController {
     @PostMapping("/release_reserved_funds")
     public boolean releaseReservedFunds(@RequestParam double amount, Authentication authentication) {
         return userService.releaseFunds(amount, authentication);
+    }
+
+    @GetMapping("get_transactions")
+    public List<TransactionHistory> getTransactions(Authentication authentication) {
+        return userService.getTransactions(authentication);
     }
 }
