@@ -1,9 +1,6 @@
 package com.example.user_service.controller;
 
-import com.example.user_service.entities.TransactionHistory;
-import com.example.user_service.entities.User;
-import com.example.user_service.entities.UserDetails;
-import com.example.user_service.entities.Wallet;
+import com.example.user_service.entities.*;
 import com.example.user_service.repository.UserDetailsRepository;
 import com.example.user_service.repository.UserRepository;
 import com.example.user_service.service.CustomAuthService;
@@ -70,5 +67,10 @@ public class UserController {
     @GetMapping("/get_transactions")
     public List<TransactionHistory> getTransactions(Authentication authentication) {
         return userService.getTransactions(authentication);
+    }
+
+    @GetMapping("/get_portfolio")
+    public Map<String, String> getPortfolio(Authentication authentication) {
+        return userService.getPortfolio(authentication);
     }
 }

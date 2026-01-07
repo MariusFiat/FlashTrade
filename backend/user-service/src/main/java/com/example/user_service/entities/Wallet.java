@@ -30,6 +30,9 @@ public class Wallet {
     @Column(nullable = false)
     private String currency = "DOLLARS";
 
+    @Column(nullable = false)
+    private Double totalInvested = 0.0; //When a buy order is fulfilled, increment the totalInvested field.
+
     @OneToMany(mappedBy = "wallet", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TransactionHistory> history = new ArrayList<>();
 }

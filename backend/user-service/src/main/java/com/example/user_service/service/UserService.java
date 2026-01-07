@@ -1,9 +1,6 @@
 package com.example.user_service.service;
 
-import com.example.user_service.entities.TransactionHistory;
-import com.example.user_service.entities.User;
-import com.example.user_service.entities.UserDetails;
-import com.example.user_service.entities.Wallet;
+import com.example.user_service.entities.*;
 import com.example.user_service.repository.TransactionHistoryRepository;
 import com.example.user_service.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -210,5 +207,27 @@ public class UserService {
         User user = getCurrentUser(authentication);
         List<TransactionHistory> transactions = transactionHistoryRepository.findTransactionsByWalletId(user.getUserDetails().getWallet().getId());
         return transactions;
+    }
+
+    public Map<String, String> getPortfolio(Authentication authentication) {
+        User currentUser = getCurrentUser(authentication);
+        UserDetails details = currentUser.getUserDetails();
+        Map<String, String> map = new HashMap<>();
+        double totalPortfolioValue = 0;
+
+        List<Portfolio> list = details.getPortfolioItems();
+        for (Portfolio portfolio : list) {
+            map.put("stock", portfolio.getStock());
+            map.put("portfolio_value", portfolio.getPortfolioValue().toString());
+            map.put("shares", String.valueOf(portfolio.getShares()));
+            totalPortfolioValue += portfolio.getPortfolioValue();
+        }
+
+        Wallet wallet = details.getWallet();
+        map.put("totalInvested", wallet.getTotalInvested().toString());
+        map.put("totalValue", String.valueOf(totalPortfolioValue));
+        map.put("totalReturn", String.valueOf(totalPortfolioValue - wallet.getTotalInvested()));
+
+        return map;
     }
 }

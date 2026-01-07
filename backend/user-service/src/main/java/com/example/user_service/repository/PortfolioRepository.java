@@ -8,9 +8,11 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface PortofolioRepository extends JpaRepository<Portfolio, Long> {
+public interface PortfolioRepository extends JpaRepository<Portfolio, Long> {
 
     Optional<Portfolio> findByUserDetailsIdAndStock(Long userDetailsId, String stock);
 
     List<Portfolio> findAllByUserDetailsId(Long userDetailsId);
+
+    List<Portfolio> findByStockIgnoreCase(String symbol);
 }

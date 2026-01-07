@@ -77,6 +77,7 @@ public class OrderRequestListener {
         } else if ("MATCHED".equalsIgnoreCase(message.getStatus())) {
             double spentAmount = message.getAmountSpent();
             wallet.setPandingBalance(wallet.getPandingBalance() - spentAmount);
+            wallet.setTotalInvested(wallet.getTotalInvested() + spentAmount);
 
             updatePortfolio(user.getUserDetails(), message);
 
