@@ -67,16 +67,6 @@ public class UserController {
         return userService.withdrawal(amount, authentication) && userService.updateTotalWithdrawals(amount, authentication);
     }
 
-    @PostMapping("/reserve_funds")
-    public boolean reserveFunds(@RequestParam double amount, Authentication authentication) {
-        return userService.reserveFunds(amount, authentication);
-    }
-
-    @PostMapping("/release_reserved_funds")
-    public boolean releaseReservedFunds(@RequestParam double amount, Authentication authentication) {
-        return userService.releaseFunds(amount, authentication);
-    }
-
     @GetMapping("/get_transactions")
     public List<TransactionHistory> getTransactions(Authentication authentication) {
         return userService.getTransactions(authentication);
