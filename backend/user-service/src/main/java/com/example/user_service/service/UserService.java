@@ -1,8 +1,10 @@
 package com.example.user_service.service;
 
+import com.example.user_service.dto.*;
 import com.example.user_service.entities.*;
 import com.example.user_service.repository.TransactionHistoryRepository;
 import com.example.user_service.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -32,70 +34,60 @@ public class UserService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
-    public String deposit(double amount, Authentication authentication) {
+    @Transactional
+    public void deposit(double amount, Authentication authentication) {
         User user = getCurrentUser(authentication);
-        user.getUserDetails().getWallet().setBalance(user.getUserDetails().getWallet().getBalance() + amount);
+        Wallet wallet = user.getUserDetails().getWallet();
 
-        //Update transaction history
+        wallet.setBalance(wallet.getBalance() + amount);
+        wallet.setTotalDeposit(wallet.getTotalDeposit() + amount);
+
         TransactionHistory transactionHistory = new TransactionHistory();
-        transactionHistory.setWallet(user.getUserDetails().getWallet());
+        transactionHistory.setWallet(wallet);
         transactionHistory.setAmount(amount);
         transactionHistory.setTimestamp(LocalDateTime.now());
         transactionHistory.setActionType("Deposit");
         transactionHistory.setStatus("Completed");
 
-        this.transactionHistoryRepository.save(transactionHistory);
+        transactionHistoryRepository.save(transactionHistory);
         userRepository.save(user);
-        return "Deposit action fulfilled!";
     }
 
-    public String updateTotalDeposits(double amount, Authentication authentication) {
+    public WalletDTO getWalletInfo(Authentication authentication) {
         User user = getCurrentUser(authentication);
-        user.getUserDetails().getWallet().setTotalDeposit(user.getUserDetails().getWallet().getBalance() + amount);
-        userRepository.save(user);
-        return "UpdateTtoalDeposits action fulfilled!";
+        Wallet wallet = user.getUserDetails().getWallet();
+
+        return new WalletDTO(
+                wallet.getBalance(),
+                wallet.getTotalDeposit(),
+                wallet.getTotalWithdrawal(),
+                wallet.getPandingBalance(),
+                wallet.getCurrency(),
+                wallet.getTotalInvested()
+        );
     }
 
-    public Map<String, String> getWalletInfo(Authentication authentication) {
-        User user = getCurrentUser(authentication);
-        Map<String, String> map = new HashMap<>();
-
-        String availableBalance = user.getUserDetails().getWallet().getBalance().toString();
-        map.put("availableBalance", availableBalance);
-
-        String totalDeposits = user.getUserDetails().getWallet().getTotalDeposit().toString();
-        map.put("totalDeposits", totalDeposits);
-
-        String totalWithdrawals = user.getUserDetails().getWallet().getTotalWithdrawal().toString();
-        map.put("totalWithdrawals", totalWithdrawals);
-
-        String pandingBalance = user.getUserDetails().getWallet().getPandingBalance().toString();
-        map.put("pandingBalance", pandingBalance);
-        return map;
-    }
-
-    public String deleteUser(String email){
+    @Transactional
+    public boolean deleteUser(String email) {
         Optional<User> user = userRepository.findByEmail(email);
-        if(user.isPresent()) {
+        if (user.isPresent()) {
             userRepository.deleteById(user.get().getId());
-            return "The user has been deleted.";
+            return true;
         }
-        else{
-            return "The user was not found.";
-        }
+        return false;
     }
 
-    public String deleteMe(Authentication authentication) {
-        if(authentication == null){
-            return "You have to be logged in to delete your account.";
+    @Transactional
+    public void deleteMe(Authentication authentication) {
+        if (authentication == null) {
+            throw new RuntimeException("Unauthorized");
         }
 
         String email = authentication.getName();
         userRepository.deleteByEmail(email);
-        return "Your account has been deleted.";
     }
 
-    public void editUserDatails(Map<String, String> map, Authentication authentication) {
+    public void editUserDatails(UserProfileDTO profileDTO, Authentication authentication) {
         User currentUser = getCurrentUser(authentication);
 
         UserDetails details = currentUser.getUserDetails();
@@ -103,20 +95,20 @@ public class UserService {
             details = new UserDetails();
         }
 
-        if(map.get("email") != null) {
-            currentUser.setEmail(map.get("email"));
+        if(profileDTO.email() != null) {
+            currentUser.setEmail(profileDTO.email());
         }
 
-        if(map.get("firstName") != null) {
-            details.setFirstName(map.get("firstName"));
+        if(profileDTO.email() != null) {
+            details.setFirstName(profileDTO.email());
         }
 
-        if(map.get("lastName") != null) {
-            details.setLastName(map.get("lastName"));
+        if(profileDTO.lastName() != null) {
+            details.setLastName(profileDTO.lastName());
         }
 
-        if(map.get("phoneNumber") != null) {
-            details.setPhoneNumber(map.get("phoneNumber"));
+        if(profileDTO.phoneNumber() != null) {
+            details.setPhoneNumber(profileDTO.phoneNumber());
         }
 
         currentUser.setUserDetails(details); //Save the new details
@@ -125,109 +117,117 @@ public class UserService {
         userRepository.save(currentUser);
     }
 
-    public Map<String, String> listUserDetails(Authentication authentication) {
+    public UserProfileDTO listUserDetails(Authentication authentication) {
         User user = getCurrentUser(authentication);
-        Long userId = user.getId();
-        String email = user.getEmail();
-        String firstName = user.getUserDetails().getFirstName();
-        String lastName = user.getUserDetails().getLastName();
-        String phoneNumber = user.getUserDetails().getPhoneNumber();
+        UserDetails details = user.getUserDetails();
 
-        Map<String, String> map = new HashMap<>();
-        map.put("email", email);
-        map.put("firstName", firstName);
-        map.put("lastName", lastName);
-        map.put("phoneNumber", phoneNumber);
-        return map;
+        return new UserProfileDTO(
+                user.getEmail(),
+                details.getFirstName(),
+                details.getLastName(),
+                details.getPhoneNumber()
+        );
     }
 
+    @Transactional
     public boolean withdrawal(double amount, Authentication authentication) {
         User user = getCurrentUser(authentication);
+        Wallet wallet = user.getUserDetails().getWallet();
 
-        //Update the transaction history
         TransactionHistory transactionHistory = new TransactionHistory();
+        transactionHistory.setWallet(wallet);
         transactionHistory.setAmount(amount);
-        transactionHistory.setWallet(user.getUserDetails().getWallet());
         transactionHistory.setTimestamp(LocalDateTime.now());
         transactionHistory.setActionType("Withdrawal");
 
-        if(user.getUserDetails().getWallet().getBalance() >= amount){
-            user.getUserDetails().getWallet().setBalance(user.getUserDetails().getWallet().getBalance() - amount);
+        if (wallet.getBalance() >= amount) {
+            wallet.setBalance(wallet.getBalance() - amount);
+            wallet.setTotalWithdrawal(wallet.getTotalWithdrawal() + amount);
+
             transactionHistory.setStatus("Completed");
+
             transactionHistoryRepository.save(transactionHistory);
             userRepository.save(user);
             return true;
-        }
-        else{
+        } else {
             transactionHistory.setStatus("Rejected");
             transactionHistoryRepository.save(transactionHistory);
             return false;
         }
     }
 
-    public boolean updateTotalWithdrawals(double amount, Authentication authentication) {
-        User user = getCurrentUser(authentication);
-        if(user.getUserDetails().getWallet().getBalance() >= amount){
-            user.getUserDetails().getWallet().setTotalWithdrawal(user.getUserDetails().getWallet().getTotalWithdrawal() + amount);
-            userRepository.save(user);
-            return true;
-        }
-        else{
-            return false;
-        }
-    }
-
-    public boolean reserveFunds(double amount, Authentication authentication) {
+    public Integer reserveFunds(double amount, Authentication authentication) {
         User user = getCurrentUser(authentication);
         if(user.getUserDetails().getWallet().getBalance() >= amount){
             user.getUserDetails().getWallet().setBalance(user.getUserDetails().getWallet().getBalance() - amount);
             user.getUserDetails().getWallet().setPandingBalance(user.getUserDetails().getWallet().getPandingBalance() + amount);
             userRepository.save(user);
-            return true;
+            return 200;
         }
         else{
-            return false;
+            return 412;
         }
     }
 
-    public boolean releaseFunds(double amount, Authentication authentication) {
+    public Integer releaseFunds(double amount, Authentication authentication) {
         User user = getCurrentUser(authentication);
         if(user.getUserDetails().getWallet().getPandingBalance() >= amount){
             user.getUserDetails().getWallet().setPandingBalance(user.getUserDetails().getWallet().getPandingBalance() - amount);
             user.getUserDetails().getWallet().setBalance(user.getUserDetails().getWallet().getBalance() + amount);
             userRepository.save(user);
-            return true;
+            return 200;
         }
         else{
-            return false;
+            return 412;
         }
     }
 
-    public List<TransactionHistory> getTransactions(Authentication authentication) {
+    @Transactional
+    public List<TransactionHistoryDTO> getTransactions(Authentication authentication) {
         User user = getCurrentUser(authentication);
-        List<TransactionHistory> transactions = transactionHistoryRepository.findTransactionsByWalletId(user.getUserDetails().getWallet().getId());
-        return transactions;
+        Long walletId = user.getUserDetails().getWallet().getId();
+
+        List<TransactionHistory> transactions = transactionHistoryRepository.findTransactionsByWalletId(walletId);
+
+        return transactions.stream()
+                .map(t -> new TransactionHistoryDTO(
+                        t.getId(),
+                        t.getActionType(),
+                        t.getAmount(),
+                        t.getStatus(),
+                        t.getTimestamp()
+                ))
+                .toList();
     }
 
-    public Map<String, String> getPortfolio(Authentication authentication) {
+    @Transactional
+    public PortfolioSummaryDTO getPortfolio(Authentication authentication) {
         User currentUser = getCurrentUser(authentication);
         UserDetails details = currentUser.getUserDetails();
-        Map<String, String> map = new HashMap<>();
-        double totalPortfolioValue = 0;
-
-        List<Portfolio> list = details.getPortfolioItems();
-        for (Portfolio portfolio : list) {
-            map.put("stock", portfolio.getStock());
-            map.put("portfolio_value", portfolio.getPortfolioValue().toString());
-            map.put("shares", String.valueOf(portfolio.getShares()));
-            totalPortfolioValue += portfolio.getPortfolioValue();
-        }
-
         Wallet wallet = details.getWallet();
-        map.put("totalInvested", wallet.getTotalInvested().toString());
-        map.put("totalValue", String.valueOf(totalPortfolioValue));
-        map.put("totalReturn", String.valueOf(totalPortfolioValue - wallet.getTotalInvested()));
 
-        return map;
+        List<PortfolioItemDTO> items = details.getPortfolioItems().stream()
+                .map(p -> new PortfolioItemDTO(
+                        p.getId(),
+                        p.getStock(),
+                        p.getShares(),
+                        p.getPortfolioValue(),
+                        p.getAllocation()
+                ))
+                .toList();
+
+        double totalValue = items.stream()
+                .mapToDouble(PortfolioItemDTO::portfolioValue)
+                .sum();
+
+        double totalInvested = wallet.getTotalInvested();
+        double totalReturn = totalValue - totalInvested;
+
+        return new PortfolioSummaryDTO(
+                items,
+                totalInvested,
+                totalValue,
+                totalReturn
+        );
     }
 }
