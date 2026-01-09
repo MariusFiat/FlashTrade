@@ -11,8 +11,8 @@ CREATE TABLE orders (
     original_qty INTEGER NOT NULL,
     filled_qty INTEGER NOT NULL DEFAULT 0,
     price DECIMAL(10, 2) NOT NULL,
-    order_type TEXT NOT NULL,
     status TEXT NOT NULL,
+    side TEXT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
 
     CONSTRAINT fk_orders_stock

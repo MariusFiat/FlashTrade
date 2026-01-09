@@ -3,8 +3,6 @@ package com.example.trading_service.messaging.dto;
 import java.math.BigDecimal;
 import java.time.Instant;
 
-import com.example.trading_service.entities.order.OrderType;
-
 public class OrderCreatedEvent {
     private Long orderId;
     private String symbol;

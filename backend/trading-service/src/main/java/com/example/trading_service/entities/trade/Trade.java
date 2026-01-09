@@ -18,6 +18,12 @@ public class Trade {
     private int quantity;
     private BigDecimal price;
 
+    @Column(nullable = false)
+    private Long buyOrderId;
+
+    @Column(nullable = false)
+    private Long sellOrderId;
+
     @Column(name = "buyer_id",nullable = false)
     private String buyerId;
 
@@ -64,6 +70,22 @@ public class Trade {
 
     public void setPrice(BigDecimal price) {
         this.price = price;
+    }
+
+    public Long getBuyOrderId() {
+        return buyOrderId;
+    }
+
+    public void setBuyOrderId(Long buyOrderId) {
+        this.buyOrderId = buyOrderId;
+    }
+
+    public Long getSellOrderId() {
+        return sellOrderId;
+    }
+
+    public void setSellOrderId(Long sellOrderId) {
+        this.sellOrderId = sellOrderId;
     }
 
     public String getBuyerId() {

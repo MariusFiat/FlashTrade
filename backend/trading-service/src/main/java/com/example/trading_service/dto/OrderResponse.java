@@ -1,7 +1,5 @@
 package com.example.trading_service.dto;
 
-import com.example.trading_service.entities.order.OrderType;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 
@@ -10,15 +8,13 @@ public class OrderResponse {
     private String symbol;
     private int quantity;
     private BigDecimal price;
-    private OrderType orderType;
     private Instant createdAt;
 
-    public OrderResponse(Long id, String symbol, int quantity, BigDecimal price, OrderType orderType, Instant createdAt) {
+    public OrderResponse(Long id, String symbol, int quantity, BigDecimal price, Instant createdAt) {
         this.id = id;
         this.symbol = symbol;
         this.quantity = quantity;
         this.price = price;
-        this.orderType = orderType;
         this.createdAt = createdAt;
     }
 
@@ -52,14 +48,6 @@ public class OrderResponse {
 
     public void setPrice(BigDecimal price) {
         this.price = price;
-    }
-
-    public OrderType getOrderType() {
-        return orderType;
-    }
-
-    public void setOrderType(OrderType orderType) {
-        this.orderType = orderType;
     }
 
     public Instant getCreatedAt() {

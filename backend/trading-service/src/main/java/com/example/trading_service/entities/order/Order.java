@@ -24,8 +24,9 @@ public class Order {
     private BigDecimal price;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "order_type",nullable = false)
-    private OrderType type;
+    @Column(nullable = false)
+    private OrderSide side;
+
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -41,6 +42,10 @@ public class Order {
         }
     }
 
+    public int remainingQty(){
+        return originalQty - filledQty;
+    }
+
     public Long getId() { return id; }
     public void setId(Long id) {
         this.id = id;
@@ -53,17 +58,9 @@ public class Order {
     public void setSymbol(String symbol) {
         this.symbol = symbol;
     }
-    public BigDecimal getPrice() {
-        return price;
-    }
+    public BigDecimal getPrice() { return price; }
     public void setPrice(BigDecimal price) {
         this.price = price;
-    }
-    public OrderType getType() {
-        return type;
-    }
-    public void setType(OrderType type) {
-        this.type = type;
     }
     public Instant getCreatedAt() {
         return createdAt;
@@ -77,4 +74,6 @@ public class Order {
     public void setFilledQty(int filledQty) { this.filledQty = filledQty; }
     public OrderStatus getStatus() { return status; }
     public void setStatus(OrderStatus status) { this.status = status; }
+    public OrderSide getSide() { return side; }
+    public void setSide(OrderSide side) { this.side = side; }
 }
