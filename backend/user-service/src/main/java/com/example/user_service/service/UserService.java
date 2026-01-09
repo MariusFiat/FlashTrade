@@ -2,6 +2,8 @@ package com.example.user_service.service;
 
 import com.example.user_service.dto.*;
 import com.example.user_service.entities.*;
+import com.example.user_service.model.enums.ActionType;
+import com.example.user_service.model.enums.TransactionStatus;
 import com.example.user_service.repository.TransactionHistoryRepository;
 import com.example.user_service.repository.UserRepository;
 import com.example.user_service.service.exception.UserNotFound;
@@ -46,8 +48,8 @@ public class UserService {
         transactionHistory.setWallet(wallet);
         transactionHistory.setAmount(amount);
         transactionHistory.setTimestamp(LocalDateTime.now());
-        transactionHistory.setActionType("Deposit");
-        transactionHistory.setStatus("Completed");
+        transactionHistory.setActionType(String.valueOf(ActionType.DEPOSIT));
+        transactionHistory.setStatus(String.valueOf(TransactionStatus.COMPLETED));
 
         transactionHistoryRepository.save(transactionHistory);
         userRepository.save(user);
@@ -141,19 +143,19 @@ public class UserService {
         transactionHistory.setWallet(wallet);
         transactionHistory.setAmount(amount);
         transactionHistory.setTimestamp(LocalDateTime.now());
-        transactionHistory.setActionType("Withdrawal");
+        transactionHistory.setActionType(String.valueOf(ActionType.WITHDRAW));
 
         if (wallet.getBalance() >= amount) {
             wallet.setBalance(wallet.getBalance() - amount);
             wallet.setTotalWithdrawal(wallet.getTotalWithdrawal() + amount);
 
-            transactionHistory.setStatus("Completed");
+            transactionHistory.setStatus(String.valueOf(TransactionStatus.COMPLETED));
 
             transactionHistoryRepository.save(transactionHistory);
             userRepository.save(user);
             return true;
         } else {
-            transactionHistory.setStatus("Rejected");
+            transactionHistory.setStatus(String.valueOf(TransactionStatus.REJECTED));
             transactionHistoryRepository.save(transactionHistory);
             return false;
         }
