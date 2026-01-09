@@ -4,6 +4,8 @@ import com.example.user_service.dto.*;
 import com.example.user_service.entities.*;
 import com.example.user_service.repository.TransactionHistoryRepository;
 import com.example.user_service.repository.UserRepository;
+import com.example.user_service.service.exception.UserNotFound;
+import com.example.user_service.service.exception.UserUnauthorizedException;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -29,7 +31,7 @@ public class UserService {
 
         String email = authentication.getName();
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFound("Email not found"));
     }
 
     @Transactional
@@ -77,11 +79,14 @@ public class UserService {
 
     @Transactional
     public void deleteMe(Authentication authentication) {
-        if (authentication == null) {
-            throw new RuntimeException("Unauthorized");
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new UserUnauthorizedException("User not authenticated. You have to log in first.");
         }
 
         String email = authentication.getName();
+        if (userRepository.findByEmail(email).isEmpty()) {
+            throw new UserNotFound("Email not found");
+        }
         userRepository.deleteByEmail(email);
     }
 

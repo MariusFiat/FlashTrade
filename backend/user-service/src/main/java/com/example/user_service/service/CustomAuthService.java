@@ -5,6 +5,8 @@ import com.example.user_service.entities.UserDetails;
 import com.example.user_service.entities.Wallet;
 import com.example.user_service.repository.UserDetailsRepository;
 import com.example.user_service.repository.UserRepository;
+import com.example.user_service.service.exception.InvalidCredentialsException;
+import com.example.user_service.service.exception.UserNotFound;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -59,12 +61,12 @@ public class CustomAuthService {
 
     public String login(String email, String password) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found!"));
+                .orElseThrow(() -> new UserNotFound("Email or password is invalid! User not found!"));
 
         if (passwordEncoder.matches(password, user.getPassword())) {
             return generateJwtToken(email);
         } else {
-            throw new RuntimeException("Incorrect password!");
+            throw new InvalidCredentialsException("Email or password is invalid!");
         }
     }
 
