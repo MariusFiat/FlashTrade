@@ -1,11 +1,10 @@
 package com.example.user_service.messaging;
 
-import com.example.user_service.config.RabbitStockConfig;
-import com.example.user_service.dto.*;
 import com.example.user_service.entities.Portfolio;
 import com.example.user_service.entities.User;
 import com.example.user_service.entities.UserDetails;
 import com.example.user_service.entities.Wallet;
+import com.example.user_service.messaging.dto.*;
 import com.example.user_service.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;

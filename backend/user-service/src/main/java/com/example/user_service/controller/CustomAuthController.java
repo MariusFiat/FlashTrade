@@ -1,9 +1,8 @@
 package com.example.user_service.controller;
 
-import com.example.user_service.entities.User;
 import com.example.user_service.service.CustomAuthService;
-import com.example.user_service.service.UserService;
-import org.springframework.security.core.Authentication;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -19,12 +18,30 @@ public class CustomAuthController {
     }
 
     @PostMapping("/register")
-    public String register(@RequestBody Map<String, String> payload) {
-        return authService.register(payload.get("email"), payload.get("password"), payload.get("firstName"), payload.get("lastName"));
+    public ResponseEntity<?> register(@RequestBody Map<String, String> payload) {
+        try {
+            authService.register(
+                    payload.get("email"),
+                    payload.get("password"),
+                    payload.get("firstName"),
+                    payload.get("lastName")
+            );
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(Map.of("message", "Register successfully!"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", e.getMessage()));
+        }
     }
 
     @PostMapping("/login")
-    public String login(@RequestBody Map<String, String> payload) {
-        return authService.login(payload.get("email"), payload.get("password"));
+    public ResponseEntity<?> login(@RequestBody Map<String, String> payload) {
+        try {
+            String token = authService.login(payload.get("email"), payload.get("password"));
+            return ResponseEntity.ok(Map.of("access_token", token));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", e.getMessage()));
+        }
     }
 }

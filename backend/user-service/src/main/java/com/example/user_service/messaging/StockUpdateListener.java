@@ -1,7 +1,6 @@
 package com.example.user_service.messaging;
 
-import com.example.user_service.config.RabbitStockConfig; // Importă config-ul
-import com.example.user_service.dto.StockMessage;
+import com.example.user_service.messaging.dto.StockMessage;
 import com.example.user_service.entities.Portfolio;
 import com.example.user_service.repository.PortfolioRepository;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;

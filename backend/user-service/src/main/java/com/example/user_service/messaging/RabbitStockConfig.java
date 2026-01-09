@@ -1,4 +1,4 @@
-package com.example.user_service.config;
+package com.example.user_service.messaging;
 
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;

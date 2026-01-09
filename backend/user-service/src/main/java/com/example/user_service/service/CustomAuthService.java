@@ -12,6 +12,7 @@ import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.security.Key;
 import java.util.Date;
@@ -32,14 +33,16 @@ public class CustomAuthService {
         this.userDetailsRepository = userDetailsRepository;
     }
 
-    public String register(String email, String password, String firstName, String lastName) {
+    @Transactional
+    public void register(String email, String password, String firstName, String lastName) {
         if (userRepository.findByEmail(email).isPresent()) {
-            return "{\"error\": \"Utilizatorul există deja!\"}";
+            throw new RuntimeException("User already exists!");
         }
+
         User user = new User();
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(password));
-        user.setRole("ROLE_USER"); //After register, this new account will be a "ROLE_USER" account.
+        user.setRole("ROLE_USER");
 
         UserDetails userDetails = new UserDetails();
         userDetails.setFirstName(firstName);
@@ -47,21 +50,21 @@ public class CustomAuthService {
 
         Wallet wallet = new Wallet();
         userDetails.setWallet(wallet);
+
         userDetailsRepository.save(userDetails);
 
         user.setUserDetails(userDetails);
         userRepository.save(user);
-        return "{\"message\": \"Înregistrare reușită!\"}";
     }
 
     public String login(String email, String password) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Utilizator negăsit"));
+                .orElseThrow(() -> new RuntimeException("User not found!"));
 
         if (passwordEncoder.matches(password, user.getPassword())) {
             return generateJwtToken(email);
         } else {
-            return "{\"error\": \"Parolă incorectă!\"}";
+            throw new RuntimeException("Incorrect password!");
         }
     }
 
@@ -69,18 +72,15 @@ public class CustomAuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Generăm cheia din secretul din .env
         Key key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
 
-        String token = Jwts.builder()
+        return Jwts.builder()
                 .setSubject(email)
                 .claim("role", user.getRole())
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 86400000)) // Expira in 24h
+                .setExpiration(new Date(System.currentTimeMillis() + 86400000)) // 24h
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
-
-        return "{\"access_token\": \"" + token + "\"}";
     }
 
     public Claims getClaimsFromToken(String token) {

@@ -1,9 +1,7 @@
 package com.example.user_service.controller;
 
 import com.example.user_service.dto.*;
-import com.example.user_service.entities.*;
-import com.example.user_service.repository.UserDetailsRepository;
-import com.example.user_service.repository.UserRepository;
+import com.example.user_service.messaging.dto.MessageResponse;
 import com.example.user_service.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,19 +10,14 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/user_info")
 public class UserController {
     private final UserService userService;
-    private final UserDetailsRepository userDetailsRepository;
-    private final UserRepository userRepository;
 
-    public UserController(UserService userService, UserDetailsRepository userDetailsRepository,  UserRepository userRepository) {
+    public UserController(UserService userService) {
         this.userService = userService;
-        this.userDetailsRepository = userDetailsRepository;
-        this.userRepository = userRepository;
     }
 
     @GetMapping("/list_user_details")
