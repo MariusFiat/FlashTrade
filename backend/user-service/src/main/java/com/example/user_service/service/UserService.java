@@ -1,0 +1,236 @@
+package com.example.user_service.service;
+
+import com.example.user_service.dto.*;
+import com.example.user_service.entities.*;
+import com.example.user_service.repository.TransactionHistoryRepository;
+import com.example.user_service.repository.UserRepository;
+import com.example.user_service.service.exception.UserNotFound;
+import com.example.user_service.service.exception.UserUnauthorizedException;
+import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+@Service
+public class UserService {
+
+    @Autowired
+    private UserRepository userRepository;
+    private final TransactionHistoryRepository transactionHistoryRepository;
+
+    public UserService(TransactionHistoryRepository transactionHistoryRepository) {
+        this.transactionHistoryRepository = transactionHistoryRepository;
+    }
+
+    public User getCurrentUser(Authentication authentication) {
+        if (authentication == null) return null;
+
+        String email = authentication.getName();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFound("Email not found"));
+    }
+
+    @Transactional
+    public void deposit(double amount, Authentication authentication) {
+        User user = getCurrentUser(authentication);
+        Wallet wallet = user.getUserDetails().getWallet();
+
+        wallet.setBalance(wallet.getBalance() + amount);
+        wallet.setTotalDeposit(wallet.getTotalDeposit() + amount);
+
+        TransactionHistory transactionHistory = new TransactionHistory();
+        transactionHistory.setWallet(wallet);
+        transactionHistory.setAmount(amount);
+        transactionHistory.setTimestamp(LocalDateTime.now());
+        transactionHistory.setActionType("Deposit");
+        transactionHistory.setStatus("Completed");
+
+        transactionHistoryRepository.save(transactionHistory);
+        userRepository.save(user);
+    }
+
+    public WalletDTO getWalletInfo(Authentication authentication) {
+        User user = getCurrentUser(authentication);
+        Wallet wallet = user.getUserDetails().getWallet();
+
+        return new WalletDTO(
+                wallet.getBalance(),
+                wallet.getTotalDeposit(),
+                wallet.getTotalWithdrawal(),
+                wallet.getPandingBalance(),
+                wallet.getCurrency(),
+                wallet.getTotalInvested()
+        );
+    }
+
+    @Transactional
+    public boolean deleteUser(String email) {
+        Optional<User> user = userRepository.findByEmail(email);
+        if (user.isPresent()) {
+            userRepository.deleteById(user.get().getId());
+            return true;
+        }
+        return false;
+    }
+
+    @Transactional
+    public void deleteMe(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new UserUnauthorizedException("User not authenticated. You have to log in first.");
+        }
+
+        String email = authentication.getName();
+        if (userRepository.findByEmail(email).isEmpty()) {
+            throw new UserNotFound("Email not found");
+        }
+        userRepository.deleteByEmail(email);
+    }
+
+    public void editUserDatails(UserProfileDTO profileDTO, Authentication authentication) {
+        User currentUser = getCurrentUser(authentication);
+
+        UserDetails details = currentUser.getUserDetails();
+        if (details == null) {
+            details = new UserDetails();
+        }
+
+        if(profileDTO.email() != null) {
+            currentUser.setEmail(profileDTO.email());
+        }
+
+        if(profileDTO.email() != null) {
+            details.setFirstName(profileDTO.email());
+        }
+
+        if(profileDTO.lastName() != null) {
+            details.setLastName(profileDTO.lastName());
+        }
+
+        if(profileDTO.phoneNumber() != null) {
+            details.setPhoneNumber(profileDTO.phoneNumber());
+        }
+
+        currentUser.setUserDetails(details); //Save the new details
+
+        //Save the new data
+        userRepository.save(currentUser);
+    }
+
+    public UserProfileDTO listUserDetails(Authentication authentication) {
+        User user = getCurrentUser(authentication);
+        UserDetails details = user.getUserDetails();
+
+        return new UserProfileDTO(
+                user.getEmail(),
+                details.getFirstName(),
+                details.getLastName(),
+                details.getPhoneNumber()
+        );
+    }
+
+    @Transactional
+    public boolean withdrawal(double amount, Authentication authentication) {
+        User user = getCurrentUser(authentication);
+        Wallet wallet = user.getUserDetails().getWallet();
+
+        TransactionHistory transactionHistory = new TransactionHistory();
+        transactionHistory.setWallet(wallet);
+        transactionHistory.setAmount(amount);
+        transactionHistory.setTimestamp(LocalDateTime.now());
+        transactionHistory.setActionType("Withdrawal");
+
+        if (wallet.getBalance() >= amount) {
+            wallet.setBalance(wallet.getBalance() - amount);
+            wallet.setTotalWithdrawal(wallet.getTotalWithdrawal() + amount);
+
+            transactionHistory.setStatus("Completed");
+
+            transactionHistoryRepository.save(transactionHistory);
+            userRepository.save(user);
+            return true;
+        } else {
+            transactionHistory.setStatus("Rejected");
+            transactionHistoryRepository.save(transactionHistory);
+            return false;
+        }
+    }
+
+    public Integer reserveFunds(double amount, Authentication authentication) {
+        User user = getCurrentUser(authentication);
+        if(user.getUserDetails().getWallet().getBalance() >= amount){
+            user.getUserDetails().getWallet().setBalance(user.getUserDetails().getWallet().getBalance() - amount);
+            user.getUserDetails().getWallet().setPandingBalance(user.getUserDetails().getWallet().getPandingBalance() + amount);
+            userRepository.save(user);
+            return 200;
+        }
+        else{
+            return 412;
+        }
+    }
+
+    public Integer releaseFunds(double amount, Authentication authentication) {
+        User user = getCurrentUser(authentication);
+        if(user.getUserDetails().getWallet().getPandingBalance() >= amount){
+            user.getUserDetails().getWallet().setPandingBalance(user.getUserDetails().getWallet().getPandingBalance() - amount);
+            user.getUserDetails().getWallet().setBalance(user.getUserDetails().getWallet().getBalance() + amount);
+            userRepository.save(user);
+            return 200;
+        }
+        else{
+            return 412;
+        }
+    }
+
+    @Transactional
+    public List<TransactionHistoryDTO> getTransactions(Authentication authentication) {
+        User user = getCurrentUser(authentication);
+        Long walletId = user.getUserDetails().getWallet().getId();
+
+        List<TransactionHistory> transactions = transactionHistoryRepository.findTransactionsByWalletId(walletId);
+
+        return transactions.stream()
+                .map(t -> new TransactionHistoryDTO(
+                        t.getId(),
+                        t.getActionType(),
+                        t.getAmount(),
+                        t.getStatus(),
+                        t.getTimestamp()
+                ))
+                .toList();
+    }
+
+    @Transactional
+    public PortfolioSummaryDTO getPortfolio(Authentication authentication) {
+        User currentUser = getCurrentUser(authentication);
+        UserDetails details = currentUser.getUserDetails();
+        Wallet wallet = details.getWallet();
+
+        List<PortfolioItemDTO> items = details.getPortfolioItems().stream()
+                .map(p -> new PortfolioItemDTO(
+                        p.getId(),
+                        p.getStock(),
+                        p.getShares(),
+                        p.getPortfolioValue(),
+                        p.getAllocation()
+                ))
+                .toList();
+
+        double totalValue = items.stream()
+                .mapToDouble(PortfolioItemDTO::portfolioValue)
+                .sum();
+
+        double totalInvested = wallet.getTotalInvested();
+        double totalReturn = totalValue - totalInvested;
+
+        return new PortfolioSummaryDTO(
+                items,
+                totalInvested,
+                totalValue,
+                totalReturn
+        );
+    }
+}

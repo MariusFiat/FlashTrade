@@ -1,11 +1,14 @@
 package com.example.trading_service.entities.trade;
 
 import jakarta.persistence.*;
+import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 
-@Entity(name = "trades")
+@Entity
+@Table(name = "trades")
+@Data
 public class Trade {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

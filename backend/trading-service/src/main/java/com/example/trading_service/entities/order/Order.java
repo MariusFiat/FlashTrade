@@ -1,12 +1,14 @@
 package com.example.trading_service.entities.order;
 
 import jakarta.persistence.*;
+import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 
 @Entity
 @Table(name = "orders")
+@Data
 public class Order {
     @Id
     @GeneratedValue(strategy = jakarta.persistence.GenerationType.IDENTITY)
@@ -76,4 +78,8 @@ public class Order {
     public void setStatus(OrderStatus status) { this.status = status; }
     public OrderSide getSide() { return side; }
     public void setSide(OrderSide side) { this.side = side; }
+
+    public OrderSide getOrderSide() {
+        return side;
+    }
 }
