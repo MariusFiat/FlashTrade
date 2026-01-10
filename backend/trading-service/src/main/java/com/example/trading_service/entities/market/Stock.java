@@ -23,10 +23,21 @@ public class Stock {
     @Column(nullable = false)
     private boolean is_active;
 
+    @Column(nullable = false)
+    private double price;
+
     public boolean isIs_active() {
         return is_active;
     }
     public void setIs_active(boolean is_active) {
         this.is_active = is_active;
+    }
+
+    public double getPrice() {
+        return price;
+    }
+
+    public void setPrice(double newPrice) {
+        this.price = newPrice;
     }
 }

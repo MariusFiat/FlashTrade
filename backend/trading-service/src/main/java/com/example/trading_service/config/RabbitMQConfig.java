@@ -13,15 +13,15 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RabbitMQConfig {
-    
+
     // Exchange names
     public static final String TRADING_COMMANDS_EXCHANGE = "trading.commands.exchange";
     public static final String TRADING_EVENTS_EXCHANGE = "trading.events.exchange";
-    
+
     // Queue names
     public static final String ORDER_COMMAND_QUEUE = "order.command.queue";
     public static final String ORDER_EVENT_QUEUE = "order.event.queue";
-    
+
     // Routing keys
     public static final String ORDER_PLACE_KEY = "order.place";
     public static final String ORDER_CANCEL_KEY = "order.cancel";
@@ -29,13 +29,32 @@ public class RabbitMQConfig {
     public static final String ORDER_CREATED_KEY = "order.created";
     public static final String ORDER_EXECUTED_KEY = "order.executed";
     public static final String ORDER_FAILED_KEY = "order.failed";
-    
-    // Message converter for JSON serialization
+
+    //Stock price update -> user_service
+    public static final String STOCK_DATA_QUEUE = "stock_info_queue";
+    public static final String STOCK_EXCHANGE = "trading_data_exchange";
+
+    @Bean
+    public TopicExchange stockExchange() {
+        return new TopicExchange(STOCK_EXCHANGE);
+    }
+
+    @Bean
+    public Queue stockQueue() {
+        return new Queue(STOCK_DATA_QUEUE);
+    }
+
+    @Bean
+    public Binding stockBinding(Queue stockQueue, TopicExchange stockExchange) {
+        return BindingBuilder.bind(stockQueue).to(stockExchange).with("stock.info.#");
+    }
+
+    //Stock price update -> user_service end
     @Bean
     public MessageConverter jsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
     }
-    
+
     @Bean
     public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(
             ConnectionFactory connectionFactory) {
@@ -44,25 +63,25 @@ public class RabbitMQConfig {
         factory.setMessageConverter(jsonMessageConverter());
         return factory;
     }
-    
+
     // Commands Exchange (Gateway -> Trading Service)
     @Bean
     public TopicExchange tradingCommandsExchange() {
         return new TopicExchange(TRADING_COMMANDS_EXCHANGE);
     }
-    
+
     // Events Exchange (Trading Service -> Gateway/Other Services)
     @Bean
     public TopicExchange tradingEventsExchange() {
         return new TopicExchange(TRADING_EVENTS_EXCHANGE);
     }
-    
+
     // Command Queue for receiving orders from gateway
     @Bean
     public Queue orderCommandQueue() {
         return new Queue(ORDER_COMMAND_QUEUE, true);
     }
-    
+
     // Binding: Commands Exchange -> Order Command Queue
     @Bean
     public Binding orderPlaceBinding() {
@@ -71,7 +90,7 @@ public class RabbitMQConfig {
                 .to(tradingCommandsExchange())
                 .with(ORDER_PLACE_KEY);
     }
-    
+
     @Bean
     public Binding orderCancelBinding() {
         return BindingBuilder
@@ -79,7 +98,7 @@ public class RabbitMQConfig {
                 .to(tradingCommandsExchange())
                 .with(ORDER_CANCEL_KEY);
     }
-    
+
     @Bean
     public Binding orderUpdateBinding() {
         return BindingBuilder
