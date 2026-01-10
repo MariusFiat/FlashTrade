@@ -8,10 +8,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Link, useLocation } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
+import { useAuth } from "@/hooks/useAuth"
 
 export function DashboardHeader() {
   const { pathname } = useLocation()
+  const navigate = useNavigate()
+  const { logout, user } = useAuth()
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -77,6 +80,11 @@ export function DashboardHeader() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              {user && (
+                <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                  {user.email}
+                </div>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
                 <Link to="/dashboard/account">Account Settings</Link>
@@ -85,7 +93,15 @@ export function DashboardHeader() {
                 <Link to="/dashboard/wallet">Wallet</Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive">Log out</DropdownMenuItem>
+              <DropdownMenuItem 
+                className="text-destructive cursor-pointer"
+                onClick={() => {
+                  logout()
+                  navigate('/login')
+                }}
+              >
+                Log out
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 

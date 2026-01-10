@@ -1,6 +1,5 @@
 package com.example.trading_service.dto;
 
-import com.example.trading_service.entities.Order;
 import com.example.trading_service.entities.OrderType;
 
 import java.time.Instant;
