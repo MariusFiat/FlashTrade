@@ -1,7 +1,6 @@
 CREATE TABLE stocks (
     symbol VARCHAR(10) PRIMARY KEY,
-    name TEXT NOT NULL ,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE
+    name TEXT NOT NULL
 );
 
 CREATE TABLE orders (
