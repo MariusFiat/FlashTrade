@@ -1,31 +1,40 @@
 
 import { Card, CardContent } from "@/components/ui/card"
 import { DollarSign, ArrowUpRight, ArrowDownRight, Clock } from "lucide-react"
+import { useMemo } from "react"
+import type { WalletInfo } from "@/types/user"
+import { getCurrencySymbol } from "@/lib/currency"
 
-export function WalletOverview() {
+interface WalletOverviewProps {
+  walletInfo: WalletInfo;
+}
+
+export function WalletOverview({ walletInfo }: WalletOverviewProps) {
+  const currencySymbol = useMemo(() => getCurrencySymbol(walletInfo.currency), [walletInfo.currency])
+
   const stats = [
     {
       label: "Available Balance",
-      value: "$25,430.00",
+      value: `${currencySymbol}${walletInfo.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       change: "Ready to trade",
       icon: DollarSign,
     },
     {
       label: "Total Deposits",
-      value: "$150,000.00",
+      value: `${currencySymbol}${walletInfo.totalDeposit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       change: "All-time",
       icon: ArrowDownRight,
     },
     {
       label: "Total Withdrawals",
-      value: "$33,670.23",
+      value: `${currencySymbol}${walletInfo.totalWithdrawal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       change: "All-time",
       icon: ArrowUpRight,
     },
     {
       label: "Pending",
-      value: "$0.00",
-      change: "No pending transactions",
+      value: `${currencySymbol}${walletInfo.pandingBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      change: walletInfo.pandingBalance === 0 ? "No pending transactions" : "In pending transactions",
       icon: Clock,
     },
   ]
