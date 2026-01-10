@@ -1,21 +1,30 @@
 package com.example.user_service.service;
 
-import com.example.user_service.dto.*;
-import com.example.user_service.entities.*;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Service;
+
+import com.example.user_service.dto.PortfolioItemDTO;
+import com.example.user_service.dto.PortfolioSummaryDTO;
+import com.example.user_service.dto.TransactionHistoryDTO;
+import com.example.user_service.dto.UserProfileDTO;
+import com.example.user_service.dto.WalletDTO;
+import com.example.user_service.entities.TransactionHistory;
+import com.example.user_service.entities.User;
+import com.example.user_service.entities.UserDetails;
+import com.example.user_service.entities.Wallet;
 import com.example.user_service.model.enums.ActionType;
 import com.example.user_service.model.enums.TransactionStatus;
 import com.example.user_service.repository.TransactionHistoryRepository;
 import com.example.user_service.repository.UserRepository;
 import com.example.user_service.service.exception.UserNotFound;
 import com.example.user_service.service.exception.UserUnauthorizedException;
-import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
-import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
+import jakarta.transaction.Transactional;
 
 @Service
 public class UserService {
@@ -104,8 +113,8 @@ public class UserService {
             currentUser.setEmail(profileDTO.email());
         }
 
-        if(profileDTO.email() != null) {
-            details.setFirstName(profileDTO.email());
+        if(profileDTO.firstName() != null) {
+            details.setFirstName(profileDTO.firstName());
         }
 
         if(profileDTO.lastName() != null) {

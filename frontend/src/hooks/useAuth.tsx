@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authApi } from '@/lib/authApi';
+import { authApi } from '@/services/authApi';
 import { setCookie, getCookie, deleteCookie } from '@/lib/cookies';
 import type { User, AuthContextType, LoginRequest, RegisterRequest } from '@/types/auth';
 
