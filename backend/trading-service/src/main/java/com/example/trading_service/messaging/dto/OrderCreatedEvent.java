@@ -1,5 +1,8 @@
 package com.example.trading_service.messaging.dto;
 
+import com.example.trading_service.entities.order.OrderSide;
+import com.example.trading_service.model.OrderType;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 
@@ -8,7 +11,7 @@ public class OrderCreatedEvent {
     private String symbol;
     private int quantity;
     private BigDecimal price;
-    private OrderType orderType;
+    private OrderSide orderSide;
     private String userId;
     private Instant createdAt;
     private String correlationId;
@@ -18,12 +21,12 @@ public class OrderCreatedEvent {
     public OrderCreatedEvent() {
     }
 
-    public OrderCreatedEvent(Long orderId, String symbol, int quantity, BigDecimal price, OrderType orderType, String userId, Instant createdAt, String correlationId, String status, String errorMessage) {
+    public OrderCreatedEvent(Long orderId, String symbol, int quantity, BigDecimal price, OrderSide orderSide, String userId, Instant createdAt, String correlationId, String status, String errorMessage) {
         this.orderId = orderId;
         this.symbol = symbol;
         this.quantity = quantity;
         this.price = price;
-        this.orderType = orderType;
+        this.orderSide = orderSide;
         this.userId = userId;
         this.createdAt = createdAt;
         this.correlationId = correlationId;
@@ -63,13 +66,13 @@ public class OrderCreatedEvent {
         this.price = price;
     }
 
-    public OrderType getOrderType() {
-        return orderType;
-    }
-
-    public void setOrderType(OrderType orderType) {
-        this.orderType = orderType;
-    }
+//    public OrderType getOrderType() {
+//        return orderType;
+//    }
+//
+//    public void setOrderType(OrderType orderType) {
+//        this.orderType = orderType;
+//    }
 
     public String getUserId() {
         return userId;
@@ -110,4 +113,5 @@ public class OrderCreatedEvent {
     public void setErrorMessage(String errorMessage) {
         this.errorMessage = errorMessage;
     }
+
 }

@@ -89,7 +89,8 @@ public class OrderService {
                 order.getSymbol(),
                 order.getOriginalQty(),
                 order.getPrice(),
-                order.getCreatedAt()
+                order.getCreatedAt(),
+                order.getOrderSide()
         );
     }
 }
