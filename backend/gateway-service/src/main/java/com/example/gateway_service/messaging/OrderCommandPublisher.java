@@ -1,5 +1,6 @@
 package com.example.gateway_service.messaging;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -22,7 +23,7 @@ public class OrderCommandPublisher {
         // Generate correlation ID for tracking
         String correlationId = UUID.randomUUID().toString();
         command.setCorrelationId(correlationId);
-        
+
         rabbitTemplate.convertAndSend(
                 RabbitMQConfig.TRADING_COMMANDS_EXCHANGE,
                 RabbitMQConfig.ORDER_PLACE_KEY,

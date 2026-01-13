@@ -29,4 +29,15 @@ public class OrderBook {
         bids.remove(order);
         asks.remove(order);
     }
+
+    @Override
+    public String toString() {
+        return "OrderBook{" +
+                "bids(size=" + bids.size() +
+                ", bestBid=" + bids.peek() +
+                "), asks(size=" + asks.size() +
+                ", bestAsk=" + asks.peek() +
+                ")" +
+                '}';
+    }
 }

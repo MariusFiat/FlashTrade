@@ -61,6 +61,8 @@ public class RabbitMQConfig {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(jsonMessageConverter());
+        factory.setBatchListener(true);
+        factory.setConsumerBatchEnabled(true);
         return factory;
     }
 

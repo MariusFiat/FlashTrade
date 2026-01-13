@@ -1,5 +1,6 @@
 package com.example.trading_service.messaging;
 
+import com.example.trading_service.dto.OrderResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -9,37 +10,41 @@ import com.example.trading_service.config.RabbitMQConfig;
 import com.example.trading_service.messaging.dto.PlaceOrderCommand;
 import com.example.trading_service.service.OrderService;
 
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.stream.Collectors;
+
 @Component
 public class OrderCommandListener {
     private static final Logger log = LoggerFactory.getLogger(OrderCommandListener.class);
     
     private final OrderService orderService;
-    private final OrderEventPublisher eventPublisher;
 
-    public OrderCommandListener(OrderService orderService, OrderEventPublisher eventPublisher) {
+    public OrderCommandListener(OrderService orderService) {
         this.orderService = orderService;
-        this.eventPublisher = eventPublisher;
     }
     
     @RabbitListener(queues = RabbitMQConfig.ORDER_COMMAND_QUEUE)
-    public void handleOrderCommand(PlaceOrderCommand command) {
-        log.info("Received order command: {}", command);
-        
-        try {
-            // Process the order
-            var orderResponse = orderService.placeOrderFromCommand(command);
-            
-            // Publish success event back to gateway
-            eventPublisher.publishOrderCreated(orderResponse, command.getCorrelationId(), "SUCCESS", null);
-            
-            log.info("Order processed successfully: orderId={}, symbol={}, quantity={}",
-                    orderResponse.getId(), orderResponse.getSymbol(), orderResponse.getQuantity());
-            
-        } catch (Exception e) {
-            log.error("Failed to process order command: {}", e.getMessage(), e);
-            
-            // Publish failure event
-            eventPublisher.publishOrderFailed(command.getCorrelationId(), e.getMessage());
-        }
+    public void handleOrderCommand(List<PlaceOrderCommand> commands) {
+        if (commands.isEmpty()) return;
+
+        log.info("Received batch of {} orders.", commands.size());
+        commands.forEach(command ->
+                log.info(
+                        "Processing order: userId={}, symbol={}, quantity={}, side={}, correlationId={}",
+                        command.getUserId(),
+                        command.getSymbol(),
+                        command.getQuantity(),
+                        command.getSide(),
+                        command.getCorrelationId()
+                )
+        );
+
+        Map<String, List<PlaceOrderCommand>> ordersBySymbol = commands.stream()
+                .collect(Collectors.groupingBy(PlaceOrderCommand::getSymbol));
+
+        ordersBySymbol.forEach(orderService::placeOrderBatch);
     }
 }
