@@ -1,10 +1,9 @@
 package com.example.trading_service.messaging.dto;
 
-import com.example.trading_service.entities.order.OrderSide;
-import com.example.trading_service.model.OrderType;
-
 import java.math.BigDecimal;
 import java.time.Instant;
+
+import com.example.trading_service.entities.order.OrderSide;
 
 public class OrderCreatedEvent {
     private Long orderId;
@@ -66,13 +65,13 @@ public class OrderCreatedEvent {
         this.price = price;
     }
 
-//    public OrderType getOrderType() {
-//        return orderType;
-//    }
-//
-//    public void setOrderType(OrderType orderType) {
-//        this.orderType = orderType;
-//    }
+    public OrderSide getOrderSide() {
+        return orderSide;
+    }
+
+    public void setOrderSide(OrderSide orderSide) {
+        this.orderSide = orderSide;
+    }
 
     public String getUserId() {
         return userId;
