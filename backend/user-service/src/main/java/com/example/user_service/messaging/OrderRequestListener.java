@@ -17,11 +17,13 @@ import java.util.Optional;
 @Service
 public class OrderRequestListener {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final RabbitTemplate rabbitTemplate;
 
-    @Autowired
-    private RabbitTemplate rabbitTemplate;
+    public OrderRequestListener(UserRepository userRepository, RabbitTemplate rabbitTemplate) {
+        this.userRepository = userRepository;
+        this.rabbitTemplate = rabbitTemplate;
+    }
 
     @RabbitListener(queues = RabbitStockConfig.BUY_ORDER_QUEUE)
     @Transactional
