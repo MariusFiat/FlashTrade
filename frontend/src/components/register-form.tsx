@@ -5,24 +5,46 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Eye, EyeOff } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Eye, EyeOff, AlertCircle } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
 import { Checkbox } from "@/components/ui/checkbox"
+import { useAuth } from "@/hooks/useAuth"
 
 export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
+  const { register } = useAuth()
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-    setIsLoading(false)
-    // Redirect to dashboard (mock)
-    navigate("/dashboard")
+    setError(null)
+
+    const formData = new FormData(e.currentTarget)
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
+    const confirmPassword = formData.get('confirmPassword') as string
+    const firstName = formData.get('firstName') as string
+    const lastName = formData.get('lastName') as string
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match')
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      await register({ email, password, firstName, lastName })
+      navigate("/dashboard")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Registration failed. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -33,20 +55,27 @@ export function RegisterForm() {
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="firstName">{"First name"}</Label>
-              <Input id="firstName" placeholder="John" required className="bg-secondary border-border" />
+              <Input id="firstName" name="firstName" placeholder="First name" required className="bg-secondary border-border" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="lastName">{"Last name"}</Label>
-              <Input id="lastName" placeholder="Doe" required className="bg-secondary border-border" />
+              <Input id="lastName" name="lastName" placeholder="Last name" required className="bg-secondary border-border" />
             </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">{"Email"}</Label>
             <Input
               id="email"
+              name="email"
               type="email"
               placeholder="trader@example.com"
               required
@@ -58,6 +87,7 @@ export function RegisterForm() {
             <div className="relative">
               <Input
                 id="password"
+                name="password"
                 type={showPassword ? "text" : "password"}
                 placeholder="Create a strong password"
                 required
@@ -77,6 +107,7 @@ export function RegisterForm() {
             <div className="relative">
               <Input
                 id="confirmPassword"
+                name="confirmPassword"
                 type={showConfirmPassword ? "text" : "password"}
                 placeholder="Re-enter your password"
                 required
@@ -98,9 +129,9 @@ export function RegisterForm() {
               className="text-sm text-muted-foreground leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             >
               {"I agree to the "}
-              <Link to="/terms" className="text-primary hover:underline">
+              <a href="https://dotfic.com/zDyk" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                 {"terms and conditions"}
-              </Link>
+              </a>
             </label>
           </div>
         </CardContent>
