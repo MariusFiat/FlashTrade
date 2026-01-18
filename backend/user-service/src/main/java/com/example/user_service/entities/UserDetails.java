@@ -30,4 +30,7 @@ public class UserDetails {
 
     @OneToMany(mappedBy = "userDetails", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Portfolio> portfolioItems = new ArrayList<>();
+
+    @OneToMany(mappedBy = "userDetails", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PortfolioHistory> portfolioHistory = new ArrayList<>();
 }
