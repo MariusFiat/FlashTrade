@@ -40,4 +40,10 @@ public class OrderBook {
                 ")" +
                 '}';
     }
+
+    public Order getOrderById(Long orderId) {
+        return bids.stream().filter(o -> o.getId().equals(orderId)).findFirst()
+                .orElseGet(() -> asks.stream().filter(o -> o.getId().equals(orderId)).findFirst().orElse(null));
+    }
+
 }

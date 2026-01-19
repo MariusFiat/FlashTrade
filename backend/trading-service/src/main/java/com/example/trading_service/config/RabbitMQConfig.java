@@ -34,6 +34,21 @@ public class RabbitMQConfig {
     public static final String STOCK_DATA_QUEUE = "stock_info_queue";
     public static final String STOCK_EXCHANGE = "trading_data_exchange";
 
+    // Wallet Verification Queues & Exchanges
+    public static final String BUY_ORDER_QUEUE = "buy_order_request_queue";
+    public static final String ORDER_RESPONSE_EXCHANGE = "buy_order_response_exchange";
+    public static final String ORDER_RESPONSE_ROUTING_KEY = "buy_order.response.key";
+
+    public static final String SELL_ORDER_QUEUE = "sell_order_request_queue";
+    public static final String SELL_RESPONSE_EXCHANGE = "sell_order_response_exchange";
+    public static final String SELL_RESPONSE_ROUTING_KEY = "sell_order.response.key";
+
+    public static final String ORDER_RESPONSE_QUEUE = "trading_order_response_queue";
+    public static final String SELL_RESPONSE_QUEUE = "trading_sell_response_queue";
+
+    public static final String TRADE_SETTLEMENT_QUEUE = "trade_settlement_queue";
+
+
     @Bean
     public TopicExchange stockExchange() {
         return new TopicExchange(STOCK_EXCHANGE);
@@ -47,6 +62,56 @@ public class RabbitMQConfig {
     @Bean
     public Binding stockBinding(Queue stockQueue, TopicExchange stockExchange) {
         return BindingBuilder.bind(stockQueue).to(stockExchange).with("stock.info.#");
+    }
+
+    // Wallet Verification Beans
+    @Bean
+    public Queue buyOrderQueue() {
+        return new Queue(BUY_ORDER_QUEUE);
+    }
+
+    @Bean
+    public TopicExchange orderResponseExchange() {
+        return new TopicExchange(ORDER_RESPONSE_EXCHANGE);
+    }
+
+    @Bean
+    public Queue orderResponseQueue() {
+        return new Queue(ORDER_RESPONSE_QUEUE);
+    }
+
+    @Bean
+    public Binding orderResponseBinding() {
+        return BindingBuilder.bind(orderResponseQueue())
+                .to(orderResponseExchange())
+                .with(ORDER_RESPONSE_ROUTING_KEY);
+    }
+
+    @Bean
+    public Queue sellOrderQueue() {
+        return new Queue(SELL_ORDER_QUEUE);
+    }
+
+    @Bean
+    public TopicExchange sellResponseExchange() {
+        return new TopicExchange(SELL_RESPONSE_EXCHANGE);
+    }
+
+    @Bean
+    public Queue sellResponseQueue() {
+        return new Queue(SELL_RESPONSE_QUEUE);
+    }
+
+    @Bean
+    public Binding sellResponseBinding() {
+        return BindingBuilder.bind(sellResponseQueue())
+                .to(sellResponseExchange())
+                .with(SELL_RESPONSE_ROUTING_KEY);
+    }
+
+    @Bean
+    public Queue tradeSettlementQueue() {
+        return new Queue(TRADE_SETTLEMENT_QUEUE, true);
     }
 
     //Stock price update -> user_service end
@@ -63,6 +128,19 @@ public class RabbitMQConfig {
         factory.setMessageConverter(jsonMessageConverter());
         factory.setBatchListener(true);
         factory.setConsumerBatchEnabled(true);
+        return factory;
+    }
+
+    @Bean(name = "singleListenerFactory")
+    public SimpleRabbitListenerContainerFactory singleListenerFactory(
+            ConnectionFactory connectionFactory) {
+
+        SimpleRabbitListenerContainerFactory factory =
+                new SimpleRabbitListenerContainerFactory();
+
+        factory.setConnectionFactory(connectionFactory);
+        factory.setMessageConverter(jsonMessageConverter());
+
         return factory;
     }
 

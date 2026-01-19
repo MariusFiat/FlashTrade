@@ -7,25 +7,24 @@ import com.example.trading_service.entities.order.OrderSide;
 import com.example.trading_service.entities.order.OrderStatus;
 import com.example.trading_service.entities.trade.Trade;
 import com.example.trading_service.messaging.OrderEventPublisher;
+import com.example.trading_service.messaging.TradeSettlementPublisher;
+import com.example.trading_service.messaging.WalletVerificationPublisher;
+import com.example.trading_service.messaging.dto.TradeSettlementEvent;
+import com.example.trading_service.messaging.dto.WalletVerificationResponse;
 import com.example.trading_service.repository.StockRepository;
 import com.example.trading_service.repository.TradeRepository;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-
 import com.example.trading_service.dto.OrderResponse;
 import com.example.trading_service.entities.order.Order;
 import com.example.trading_service.messaging.dto.PlaceOrderCommand;
 import com.example.trading_service.repository.OrderRepository;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 @Service
 public class OrderService {
@@ -34,17 +33,32 @@ public class OrderService {
     private final TradeRepository tradeRepository;
     private final StockRepository stockRepository;
     private final OrderEventPublisher eventPublisher;
+    private final WalletVerificationPublisher walletPublisher;
+    private final WalletVerificationCoordinator walletCoordinator;
+    private final TradeSettlementPublisher settlementPublisher;
 
     private final MatchingEngine engine = new MatchingEngine();
     private final Map<String, OrderBook> books = new ConcurrentHashMap<>();
-
     private final Map<String, ExecutorService> symbolExecutors = new ConcurrentHashMap<>();
 
-    public OrderService(OrderRepository orderRepository, TradeRepository tradeRepository, StockRepository stockRepository, OrderEventPublisher eventPublisher) {
+    private final ScheduledExecutorService timeoutScheduler = Executors.newScheduledThreadPool(1);
+
+    public OrderService(
+            OrderRepository orderRepository,
+            TradeRepository tradeRepository,
+            StockRepository stockRepository,
+            OrderEventPublisher eventPublisher,
+            WalletVerificationPublisher walletPublisher,
+            WalletVerificationCoordinator walletCoordinator,
+            TradeSettlementPublisher settlementPublisher
+    ) {
         this.orderRepository = orderRepository;
         this.tradeRepository = tradeRepository;
         this.stockRepository = stockRepository;
         this.eventPublisher = eventPublisher;
+        this.walletPublisher = walletPublisher;
+        this.walletCoordinator = walletCoordinator;
+        this.settlementPublisher = settlementPublisher;
     }
 
     public void placeOrderBatch(String symbol, List<PlaceOrderCommand> commands) {
@@ -73,6 +87,15 @@ public class OrderService {
 
             for (PlaceOrderCommand command : commands) {
                 try{
+                    log.info(
+                            "START processing order: correlationId={}, userId={}, side={}, qty={}, symbol={}",
+                            command.getCorrelationId(),
+                            command.getUserId(),
+                            command.getSide(),
+                            command.getQuantity(),
+                            symbol
+                    );
+
                     Order order = new Order();
                     order.setUserId(command.getUserId());
                     order.setSymbol(symbol);
@@ -84,6 +107,81 @@ public class OrderService {
                     order.setCreatedAt(Instant.now());
 
                     orderRepository.save(order);
+
+                    String correlationId = command.getCorrelationId();
+
+                    orderRepository.save(order);
+
+                    log.info(
+                            "Order saved: orderId={}, status={}, correlationId={}",
+                            order.getId(),
+                            order.getStatus(),
+                            correlationId
+                    );
+
+                    CompletableFuture<WalletVerificationResponse> walletFuture = walletCoordinator.register(correlationId);
+
+                    log.info(
+                            "Registering wallet verification future for correlationId={}",
+                            correlationId
+                    );
+
+                    if (order.getSide() == OrderSide.BUY){
+                        BigDecimal cost = currentPrice.multiply(BigDecimal.valueOf(order.getOriginalQty()));
+                        walletPublisher.sendBuyOrderVerification(
+                                order.getUserId().toString(),
+                                order.getId(),
+                                cost,
+                                correlationId
+                        );
+
+                    }else {
+                        walletPublisher.sendSellOrderVerification(
+                                order.getUserId().toString(),
+                                order.getId(),
+                                symbol,
+                                order.getOriginalQty(),
+                                correlationId
+                        );
+                    }
+                    log.info(
+                            "Wallet verification request SENT: orderId={}, side={}, correlationId={}",
+                            order.getId(),
+                            order.getSide(),
+                            correlationId
+                    );
+
+                    log.info(
+                            "Waiting for wallet verification response: correlationId={}",
+                            correlationId
+                    );
+
+                    WalletVerificationResponse walletResponse = walletFuture.get(120, TimeUnit.SECONDS);
+
+                    log.info(
+                            "Wallet response RECEIVED: orderId={}, approved={}, correlationId={}",
+                            walletResponse.getOrderId(),
+                            walletResponse.isApproved(),
+                            walletResponse.getCorrelationId()
+                    );
+
+                    if (!walletResponse.isApproved()) {
+                        order.setStatus(OrderStatus.REJECTED);
+                        incomingOrdersToSave.add(order);
+
+                        eventPublisher.publishOrderFailed(
+                                correlationId,
+                                walletResponse.getMessage()
+                        );
+                        continue;
+                    }
+
+                    log.info(
+                            "Wallet approved. Proceeding to matching: orderId={}, side={}, price={}",
+                            order.getId(),
+                            order.getSide(),
+                            currentPrice
+                    );
 
                     log.info("!!!! order: {}\nbook: {}", order, book);
                     List<Trade> trades = engine.matchMarket(order, book, currentPrice);
@@ -101,6 +199,13 @@ public class OrderService {
                         order.setStatus(OrderStatus.FILLED);
                     }
 
+                    log.info(
+                            "Matching finished: orderId={}, filledQty={}, tradesCount={}",
+                            order.getId(),
+                            order.getFilledQty(),
+                            trades.size()
+                    );
+
                     incomingOrdersToSave.add(order);
                     allTradesToSave.addAll(trades);
 
@@ -113,7 +218,7 @@ public class OrderService {
 
                     // EVENT PUBLISHING (Immediately notify user)
                     OrderResponse response = new OrderResponse(
-                            null, // ID is pending DB save, can pass null or generate UUID if needed
+                            null,
                             symbol,
                             order.getOriginalQty(),
                             currentPrice,
@@ -121,7 +226,6 @@ public class OrderService {
                             order.getSide()
                     );
                     eventPublisher.publishOrderCreated(response, command.getCorrelationId(), "SUCCESS", null);
-
                 }catch (Exception e){
                     log.error("Error processing individual order in batch: {}", command, e);
                     eventPublisher.publishOrderFailed(command.getCorrelationId(), e.getMessage());
@@ -137,30 +241,41 @@ public class OrderService {
             if (!allTradesToSave.isEmpty()) {
                 tradeRepository.saveAll(allTradesToSave);
 
-                // Update the "Maker" orders that were modified in the book
-                // TODO: when i add more buy orders and than a sell order that matches the first buy, the buy order is not updating correctly in db
+                for (Trade trade : allTradesToSave) {
+                    TradeSettlementEvent settlementEvent =
+                            new TradeSettlementEvent(
+                                    trade.getId(),
+                                    trade.getSymbol(),
+                                    trade.getQuantity(),
+                                    trade.getPrice(),
+                                    trade.getBuyOrderId(),
+                                    trade.getBuyerId(),
+                                    trade.getSellOrderId(),
+                                    trade.getSellerId()
+                            );
+
+                    settlementPublisher.publish(settlementEvent);
+                }
+
+
                 if (!makerOrderIdsToUpdate.isEmpty()) {
                     List<Order> makersToUpdate = orderRepository.findAllById(makerOrderIdsToUpdate);
                     for (Order maker : makersToUpdate) {
-                        // Simple logic: if filled, mark filled.
-                        // (In prod, you'd sync exact qty from book)
-                        if (maker.getFilledQty() >= maker.getOriginalQty()) {
+                        Order orderBook = book.getOrderById(maker.getId());
+                        if (orderBook != null) {
+                            maker.setFilledQty(orderBook.getFilledQty());
+                            maker.setStatus(orderBook.getStatus());
+                        }else {
+                            maker.setFilledQty(maker.getOriginalQty());
                             maker.setStatus(OrderStatus.FILLED);
-                        } else {
-                            maker.setStatus(OrderStatus.PARTIALLY_FILLED);
                         }
                         System.out.println("Maker:" + maker);
                     }
                     orderRepository.saveAll(makersToUpdate);
+                    orderRepository.flush();
                 }
             }
             log.info("Batch processed for {}: {} orders, {} trades", symbol, incomingOrdersToSave.size(), allTradesToSave.size());
-
-            // TODO: I will need to check the wallet and update the balance accordingly. Also I would have to send it to a matching engine
-
-//        userClient.reserveFunds(order.getId(), order.getUserId(), estimate);
-
-//        trades.forEach(userClient::commitTrade);
 
         } catch (Exception e){
             log.error("Critical batch failure for symbol: {}", symbol, e);
