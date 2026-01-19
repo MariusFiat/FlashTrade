@@ -51,7 +51,7 @@ public class StockUpdateService {
                 .toList();
 
         LocalDateTime now = LocalDateTime.now();
-        boolean shouldSaveHistory = (now.getMinute() == 0); // Verify if this is a new hour.
+        boolean shouldSaveHistory = (now.getMinute() == 30) || (now.getMinute() == 0); // Verify at every half an hour for stock_history update
 
         for (Stock stock : activeStocks) {
             try {

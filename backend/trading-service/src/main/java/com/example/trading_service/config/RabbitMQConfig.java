@@ -34,6 +34,31 @@ public class RabbitMQConfig {
     public static final String STOCK_DATA_QUEUE = "stock_info_queue";
     public static final String STOCK_EXCHANGE = "trading_data_exchange";
 
+    //Stock performance request from api gateway
+    public static final String STOCK_PERFORMANCE_REQUEST_QUEUE = "stock.performance.request.queue";
+    public static final String STOCK_PERFORMANCE_RESPONSE_QUEUE = "stock.performance.response.queue";
+
+    public static final String STOCK_PERFORMANCE_REQUEST_KEY = "stock.performance.request";
+    public static final String STOCK_PERFORMANCE_RESPONSE_KEY = "stock.performance.response";
+
+    @Bean
+    public Queue performanceRequestQueue() {
+        return new Queue(STOCK_PERFORMANCE_REQUEST_QUEUE, true);
+    }
+
+    @Bean
+    public Queue performanceResponseQueue() {
+        return new Queue(STOCK_PERFORMANCE_RESPONSE_QUEUE, true);
+    }
+
+    @Bean
+    public Binding performanceRequestBinding() {
+        return BindingBuilder
+                .bind(performanceRequestQueue())
+                .to(stockExchange())
+                .with(STOCK_PERFORMANCE_REQUEST_KEY);
+    }
+
     @Bean
     public TopicExchange stockExchange() {
         return new TopicExchange(STOCK_EXCHANGE);
@@ -105,5 +130,13 @@ public class RabbitMQConfig {
                 .bind(orderCommandQueue())
                 .to(tradingCommandsExchange())
                 .with(ORDER_UPDATE_KEY);
+    }
+
+    @Bean
+    public Binding performanceResponseBinding() {
+        return BindingBuilder
+                .bind(performanceResponseQueue())
+                .to(stockExchange())
+                .with(STOCK_PERFORMANCE_RESPONSE_KEY);
     }
 }
