@@ -1,15 +1,16 @@
 package com.example.trading_service.messaging.dto;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
-import com.example.trading_service.entities.OrderType;
+import com.example.trading_service.entities.order.OrderSide;
 
 public class OrderCreatedEvent {
     private Long orderId;
     private String symbol;
     private int quantity;
-    private double price;
-    private OrderType orderType;
+    private BigDecimal price;
+    private OrderSide orderSide;
     private String userId;
     private Instant createdAt;
     private String correlationId;
@@ -19,12 +20,12 @@ public class OrderCreatedEvent {
     public OrderCreatedEvent() {
     }
 
-    public OrderCreatedEvent(Long orderId, String symbol, int quantity, double price, OrderType orderType, String userId, Instant createdAt, String correlationId, String status, String errorMessage) {
+    public OrderCreatedEvent(Long orderId, String symbol, int quantity, BigDecimal price, OrderSide orderSide, String userId, Instant createdAt, String correlationId, String status, String errorMessage) {
         this.orderId = orderId;
         this.symbol = symbol;
         this.quantity = quantity;
         this.price = price;
-        this.orderType = orderType;
+        this.orderSide = orderSide;
         this.userId = userId;
         this.createdAt = createdAt;
         this.correlationId = correlationId;
@@ -56,20 +57,20 @@ public class OrderCreatedEvent {
         this.quantity = quantity;
     }
 
-    public double getPrice() {
+    public BigDecimal getPrice() {
         return price;
     }
 
-    public void setPrice(double price) {
+    public void setPrice(BigDecimal price) {
         this.price = price;
     }
 
-    public OrderType getOrderType() {
-        return orderType;
+    public OrderSide getOrderSide() {
+        return orderSide;
     }
 
-    public void setOrderType(OrderType orderType) {
-        this.orderType = orderType;
+    public void setOrderSide(OrderSide orderSide) {
+        this.orderSide = orderSide;
     }
 
     public String getUserId() {
@@ -111,4 +112,5 @@ public class OrderCreatedEvent {
     public void setErrorMessage(String errorMessage) {
         this.errorMessage = errorMessage;
     }
+
 }

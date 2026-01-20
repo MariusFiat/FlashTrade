@@ -23,7 +23,7 @@ public class OrderCommandListener {
     
     @RabbitListener(queues = RabbitMQConfig.ORDER_COMMAND_QUEUE)
     public void handleOrderCommand(PlaceOrderCommand command) {
-        log.info("📨 Received order command: {}", command);
+        log.info("Received order command: {}", command);
         
         try {
             // Process the order
@@ -32,11 +32,11 @@ public class OrderCommandListener {
             // Publish success event back to gateway
             eventPublisher.publishOrderCreated(orderResponse, command.getCorrelationId(), "SUCCESS", null);
             
-            log.info("✅ Order processed successfully: orderId={}, symbol={}, quantity={}", 
+            log.info("Order processed successfully: orderId={}, symbol={}, quantity={}",
                     orderResponse.getId(), orderResponse.getSymbol(), orderResponse.getQuantity());
             
         } catch (Exception e) {
-            log.error("❌ Failed to process order command: {}", e.getMessage(), e);
+            log.error("Failed to process order command: {}", e.getMessage(), e);
             
             // Publish failure event
             eventPublisher.publishOrderFailed(command.getCorrelationId(), e.getMessage());

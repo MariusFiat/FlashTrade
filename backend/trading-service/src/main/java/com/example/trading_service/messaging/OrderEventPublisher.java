@@ -25,7 +25,7 @@ public class OrderEventPublisher {
                 order.getSymbol(),
                 order.getQuantity(),
                 order.getPrice(),
-                order.getOrderType(),
+                order.getOrderSide(),
                 null,  // userId can be added later
                 order.getCreatedAt(),
                 correlationId,
@@ -39,7 +39,7 @@ public class OrderEventPublisher {
                 event
         );
         
-        log.info("📤 Published order created event: orderId={}, status={}", order.getId(), status);
+        log.info("Published order created event: orderId={}, status={}", order.getId(), status);
     }
     
     public void publishOrderFailed(String correlationId, String errorMessage) {
@@ -54,6 +54,6 @@ public class OrderEventPublisher {
                 event
         );
         
-        log.info("📤 Published order failed event: correlationId={}, error={}", correlationId, errorMessage);
+        log.info("Published order failed event: correlationId={}, error={}", correlationId, errorMessage);
     }
 }

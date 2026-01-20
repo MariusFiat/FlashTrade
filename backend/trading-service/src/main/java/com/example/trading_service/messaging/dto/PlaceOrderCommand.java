@@ -1,23 +1,25 @@
 package com.example.trading_service.messaging.dto;
 
-import com.example.trading_service.entities.OrderType;
+import com.example.trading_service.entities.order.OrderSide;
+
+import java.math.BigDecimal;
 
 public class PlaceOrderCommand {
     private String symbol;
     private int quantity;
-    private double price;
-    private OrderType orderType;
+    private BigDecimal price;
+    private OrderSide orderSide;
     private String userId;  // To track who placed the order
     private String correlationId;  // To track the request-response
 
     public PlaceOrderCommand() {
     }
 
-    public PlaceOrderCommand(String symbol, int quantity, double price, OrderType orderType, String userId, String correlationId) {
+    public PlaceOrderCommand(String symbol, int quantity, BigDecimal price, OrderSide orderSide, String userId, String correlationId) {
         this.symbol = symbol;
         this.quantity = quantity;
         this.price = price;
-        this.orderType = orderType;
+        this.orderSide = orderSide;
         this.userId = userId;
         this.correlationId = correlationId;
     }
@@ -38,20 +40,20 @@ public class PlaceOrderCommand {
         this.quantity = quantity;
     }
 
-    public double getPrice() {
+    public BigDecimal getPrice() {
         return price;
     }
 
-    public void setPrice(double price) {
+    public void setPrice(BigDecimal price) {
         this.price = price;
     }
 
-    public OrderType getOrderType() {
-        return orderType;
+    public OrderSide getOrderSide() {
+        return orderSide;
     }
 
-    public void setOrderType(OrderType orderType) {
-        this.orderType = orderType;
+    public void setOrderSide(OrderSide orderSide) {
+        this.orderSide = orderSide;
     }
 
     public String getUserId() {
