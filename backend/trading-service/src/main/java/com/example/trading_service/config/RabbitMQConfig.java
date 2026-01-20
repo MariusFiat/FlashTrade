@@ -14,9 +14,11 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RabbitMQConfig {
 
+
     // Exchange names
     public static final String TRADING_COMMANDS_EXCHANGE = "trading.commands.exchange";
     public static final String TRADING_EVENTS_EXCHANGE = "trading.events.exchange";
+
 
     // Queue names
     public static final String ORDER_COMMAND_QUEUE = "order.command.queue";
@@ -30,10 +32,6 @@ public class RabbitMQConfig {
     public static final String ORDER_CREATED_KEY = "order.created";
     public static final String ORDER_EXECUTED_KEY = "order.executed";
     public static final String ORDER_FAILED_KEY = "order.failed";
-
-    //Stock price update -> user_service
-    public static final String STOCK_DATA_QUEUE = "stock_info_queue";
-    public static final String STOCK_EXCHANGE = "trading_data_exchange";
 
     // Wallet Verification Queues & Exchanges
     public static final String BUY_ORDER_QUEUE = "buy_order_request_queue";
@@ -49,22 +47,6 @@ public class RabbitMQConfig {
 
     public static final String BUY_ORDER_CLOSE_QUEUE = "buy_order_close_queue";
     public static final String SELL_ORDER_CLOSE_QUEUE = "sell_order_close_queue";
-
-
-    @Bean
-    public TopicExchange stockExchange() {
-        return new TopicExchange(STOCK_EXCHANGE);
-    }
-
-    @Bean
-    public Queue stockQueue() {
-        return new Queue(STOCK_DATA_QUEUE);
-    }
-
-    @Bean
-    public Binding stockBinding(Queue stockQueue, TopicExchange stockExchange) {
-        return BindingBuilder.bind(stockQueue).to(stockExchange).with("stock.info.#");
-    }
 
     // Wallet Verification Beans
     @Bean
@@ -122,6 +104,52 @@ public class RabbitMQConfig {
     }
 
     //Stock price update -> user_service end
+
+    //Stock price update -> user_service
+    public static final String STOCK_DATA_QUEUE = "stock_info_queue";
+    public static final String STOCK_EXCHANGE = "trading_data_exchange";
+
+    //Stock performance request from api gateway
+    public static final String STOCK_PERFORMANCE_REQUEST_QUEUE = "stock.performance.request.queue";
+    public static final String STOCK_PERFORMANCE_RESPONSE_QUEUE = "stock.performance.response.queue";
+
+    public static final String STOCK_PERFORMANCE_REQUEST_KEY = "stock.performance.request";
+    public static final String STOCK_PERFORMANCE_RESPONSE_KEY = "stock.performance.response";
+
+    @Bean
+    public Queue performanceRequestQueue() {
+        return new Queue(STOCK_PERFORMANCE_REQUEST_QUEUE, true);
+    }
+
+    @Bean
+    public Queue performanceResponseQueue() {
+        return new Queue(STOCK_PERFORMANCE_RESPONSE_QUEUE, true);
+    }
+
+    @Bean
+    public Binding performanceRequestBinding() {
+        return BindingBuilder
+                .bind(performanceRequestQueue())
+                .to(stockExchange())
+                .with(STOCK_PERFORMANCE_REQUEST_KEY);
+    }
+
+    @Bean
+    public TopicExchange stockExchange() {
+        return new TopicExchange(STOCK_EXCHANGE);
+    }
+
+    @Bean
+    public Queue stockQueue() {
+        return new Queue(STOCK_DATA_QUEUE);
+    }
+
+    @Bean
+    public Binding stockBinding(Queue stockQueue, TopicExchange stockExchange) {
+        return BindingBuilder.bind(stockQueue).to(stockExchange).with("stock.info.#");
+    }
+
+    //Stock price update -> user_service end
     @Bean
     public MessageConverter jsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
@@ -158,11 +186,13 @@ public class RabbitMQConfig {
         return new TopicExchange(TRADING_COMMANDS_EXCHANGE);
     }
 
+
     // Events Exchange (Trading Service -> Gateway/Other Services)
     @Bean
     public TopicExchange tradingEventsExchange() {
         return new TopicExchange(TRADING_EVENTS_EXCHANGE);
     }
+
 
     // Command Queue for receiving orders from gateway
     @Bean
@@ -183,6 +213,7 @@ public class RabbitMQConfig {
                 .to(tradingCommandsExchange())
                 .with(ORDER_PLACE_KEY);
     }
+
 
     @Bean
     public Binding orderCancelBinding() {

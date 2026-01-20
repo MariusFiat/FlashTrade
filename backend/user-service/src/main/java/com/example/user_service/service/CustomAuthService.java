@@ -1,12 +1,23 @@
 package com.example.user_service.service;
 
+import java.security.Key;
+import java.util.Date;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.example.user_service.entities.User;
 import com.example.user_service.entities.UserDetails;
 import com.example.user_service.entities.Wallet;
+import com.example.user_service.model.enums.Currency;
+import com.example.user_service.model.enums.UserRole;
 import com.example.user_service.repository.UserDetailsRepository;
 import com.example.user_service.repository.UserRepository;
 import com.example.user_service.service.exception.InvalidCredentialsException;
 import com.example.user_service.service.exception.UserNotFound;
+
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -37,20 +48,21 @@ public class CustomAuthService {
 
     @Transactional
     public void register(String email, String password, String firstName, String lastName) {
-        if (userRepository.findByEmail(email).isPresent()) {
+        if (validateUserExists(email)) {
             throw new RuntimeException("User already exists!");
         }
 
         User user = new User();
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(password));
-        user.setRole("ROLE_USER");
+        user.setRole(String.valueOf(UserRole.ROLE_USER));
 
         UserDetails userDetails = new UserDetails();
         userDetails.setFirstName(firstName);
         userDetails.setLastName(lastName);
 
         Wallet wallet = new Wallet();
+        wallet.setCurrency(String.valueOf(Currency.Dollar));
         userDetails.setWallet(wallet);
 
         userDetailsRepository.save(userDetails);
@@ -86,15 +98,15 @@ public class CustomAuthService {
     }
 
     public Claims getClaimsFromToken(String token) {
-        try {
-            Key key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
-            return Jwts.parserBuilder()
-                    .setSigningKey(key)
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
-        } catch (Exception e) {
-            return null;
-        }
+        Key key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
+
+    public boolean validateUserExists(String email) {
+        return userRepository.findByEmail(email).isPresent();
     }
 }

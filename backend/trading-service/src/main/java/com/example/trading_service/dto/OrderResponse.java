@@ -1,10 +1,9 @@
 package com.example.trading_service.dto;
 
-import com.example.trading_service.entities.order.OrderSide;
-import com.example.trading_service.model.OrderType;
-
 import java.math.BigDecimal;
 import java.time.Instant;
+
+import com.example.trading_service.entities.order.OrderSide;
 
 public class OrderResponse {
     private Long id;

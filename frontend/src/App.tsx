@@ -1,4 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider } from './hooks/useAuth'
+import { ProtectedRoute } from './components/ProtectedRoute'
 
 // Pages
 import LoginPage from './pages/login/page'
@@ -14,21 +16,79 @@ import AIInsightsPage from './pages/dashboard/ai-insights/page'
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/dashboard/portfolio" element={<PortfolioPage />} />
-        <Route path="/dashboard/wallet" element={<WalletPage />} />
-        <Route path="/dashboard/markets" element={<MarketsPage />} />
-        <Route path="/dashboard/history" element={<HistoryPage />} />
-        <Route path="/dashboard/account" element={<AccountPage />} />
-        <Route path="/dashboard/ai-insights" element={<AIInsightsPage />} />
-        <Route path="/admin" element={<AdminPage />} />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/portfolio"
+            element={
+              <ProtectedRoute>
+                <PortfolioPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/wallet"
+            element={
+              <ProtectedRoute>
+                <WalletPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/markets"
+            element={
+              <ProtectedRoute>
+                <MarketsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/history"
+            element={
+              <ProtectedRoute>
+                <HistoryPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/account"
+            element={
+              <ProtectedRoute>
+                <AccountPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/ai-insights"
+            element={
+              <ProtectedRoute>
+                <AIInsightsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <AdminPage />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </Router>
+    </AuthProvider>
   )
 }
 
