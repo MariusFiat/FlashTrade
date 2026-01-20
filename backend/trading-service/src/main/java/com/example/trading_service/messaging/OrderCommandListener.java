@@ -28,11 +28,21 @@ public class OrderCommandListener {
 
         log.info("Received batch of {} orders.", commands.size());
 
-        long startTime = System.currentTimeMillis();
-        long timeoutMs = 100;
-
         try {
-            commands.forEach(command ->
+            // Filter out invalid commands
+            List<PlaceOrderCommand> validCommands = commands.stream()
+                    .filter(cmd -> {
+                        if (cmd.getSymbol() == null || cmd.getUserId() == null) {
+                            log.warn("Skipping invalid command: symbol={}, userId={}", cmd.getSymbol(), cmd.getUserId());
+                            return false;
+                        }
+                        return true;
+                    })
+                    .collect(Collectors.toList());
+
+            if (validCommands.isEmpty()) return;
+
+            validCommands.forEach(command ->
                     log.info(
                             "Processing order: userId={}, symbol={}, quantity={}, side={}, correlationId={}",
                             command.getUserId(),
@@ -43,12 +53,12 @@ public class OrderCommandListener {
                     )
             );
 
-            Map<String, List<PlaceOrderCommand>> ordersBySymbol = commands.stream()
+            Map<String, List<PlaceOrderCommand>> ordersBySymbol = validCommands.stream()
                     .collect(Collectors.groupingBy(PlaceOrderCommand::getSymbol));
 
             ordersBySymbol.forEach(orderService::placeOrderBatch);
         }catch (Exception e){
-            log.error("Error processing batch: {}", e.getMessage());
+            log.error("Error processing batch: {}", e.getMessage(), e);
         }
     }
 }

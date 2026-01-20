@@ -56,4 +56,20 @@ public class OrderEventPublisher {
         
         log.info("Published order failed event: correlationId={}, error={}", correlationId, errorMessage);
     }
+
+    public void publishOrderCanceled(String correlationId, Long orderId) {
+        OrderCreatedEvent event = new OrderCreatedEvent();
+        event.setOrderId(orderId);
+        event.setCorrelationId(correlationId);
+        event.setStatus("CANCELED");
+
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.TRADING_EVENTS_EXCHANGE,
+                RabbitMQConfig.ORDER_UPDATE_KEY,
+                event
+        );
+
+        log.info("Published order canceled event: orderId={}, correlationId={}", orderId, correlationId);
+
+    }
 }

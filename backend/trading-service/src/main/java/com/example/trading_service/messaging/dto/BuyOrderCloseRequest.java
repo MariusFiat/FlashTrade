@@ -1,4 +1,4 @@
-package com.example.user_service.messaging.dto;
+package com.example.trading_service.messaging.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,10 +7,11 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class BuyOrderRequest {
+public class BuyOrderCloseRequest {
     private String orderId;
     private String userId;
-    private String stockSymbol;
+    private String status;     // MATCHED / CLOSED
+    private Double amountSpent;
+    private String symbol;
     private Double quantity;
-    private Double priceAtOrder;
 }

@@ -30,6 +30,11 @@ public class OrderBook {
         asks.remove(order);
     }
 
+    public void removeById(Long orderId) {
+        bids.removeIf(o -> o.getId().equals(orderId));
+        asks.removeIf(o -> o.getId().equals(orderId));
+    }
+
     @Override
     public String toString() {
         return "OrderBook{" +

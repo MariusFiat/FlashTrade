@@ -1,6 +1,8 @@
 package com.example.trading_service.messaging;
 
 import com.example.trading_service.config.RabbitMQConfig;
+import com.example.trading_service.messaging.dto.BuyOrderResponse;
+import com.example.trading_service.messaging.dto.SellOrderResponse;
 import com.example.trading_service.messaging.dto.WalletVerificationResponse;
 import com.example.trading_service.service.WalletVerificationCoordinator;
 import org.slf4j.Logger;
@@ -18,23 +20,31 @@ public class WalletVerificationListener {
     }
 
     @RabbitListener(queues = RabbitMQConfig.ORDER_RESPONSE_QUEUE, containerFactory = "singleListenerFactory")
-    public void onBuyResponse(WalletVerificationResponse response) {
+    public void onBuyResponse(BuyOrderResponse response) {
         log.info(
-                "Wallet BUY response received: correlationId={}, approved={}",
-                response.getCorrelationId(),
+                "Wallet BUY response received: orderId={}, approved={}",
+                response.getOrderId(),
                 response.isApproved()
         );
-        coordinator.complete(response);
+        coordinator.complete(
+                response.getOrderId(),
+                response.isApproved(),
+                response.getReason()
+        );
     }
 
     @RabbitListener(queues = RabbitMQConfig.SELL_RESPONSE_QUEUE, containerFactory = "singleListenerFactory")
-    public void onSellResponse(WalletVerificationResponse response) {
+    public void onSellResponse(SellOrderResponse response) {
         log.info(
-                "Wallet SELL response received: correlationId={}, approved={}",
-                response.getCorrelationId(),
+                "Wallet SELL response received: orderId={}, approved={}",
+                response.getOrderId(),
                 response.isApproved()
         );
 
-        coordinator.complete(response);
+        coordinator.complete(
+                response.getOrderId(),
+                response.isApproved(),
+                response.getMessage()
+        );
     }
 }

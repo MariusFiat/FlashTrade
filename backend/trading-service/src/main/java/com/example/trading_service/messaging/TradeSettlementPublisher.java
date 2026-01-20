@@ -1,7 +1,8 @@
 package com.example.trading_service.messaging;
 
 import com.example.trading_service.config.RabbitMQConfig;
-import com.example.trading_service.messaging.dto.TradeSettlementEvent;
+import com.example.trading_service.messaging.dto.BuyOrderCloseRequest;
+import com.example.trading_service.messaging.dto.SellOrderCloseRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -17,17 +18,36 @@ public class TradeSettlementPublisher {
         this.rabbitTemplate = rabbitTemplate;
     }
 
-    public void publish(TradeSettlementEvent event) {
-        log.info(
-                "Publishing trade settlement: tradeId={}, buyerId={}, sellerId={}",
-                event.getTradeId(),
-                event.getBuyerId(),
-                event.getSellerId()
+    public void publishBuyClose(BuyOrderCloseRequest request){
+        log.info("Publishing BUY close: orderId-{}, userId-{}, status-{}, amountSpent={}, qty={}, symbol={}",
+                request.getOrderId(),
+                request.getUserId(),
+                request.getStatus(),
+                request.getAmountSpent(),
+                request.getQuantity(),
+                request.getSymbol()
         );
 
         rabbitTemplate.convertAndSend(
-                RabbitMQConfig.TRADE_SETTLEMENT_QUEUE,
-                event
+                RabbitMQConfig.BUY_ORDER_CLOSE_QUEUE,
+                request
         );
     }
+
+    public void publishSellClose(SellOrderCloseRequest request){
+        log.info("Publishing SELL close: orderId-{}, userId-{}, status-{}, amountReceived={}, qty={}, symbol={}",
+                request.getOrderId(),
+                request.getUserId(),
+                request.getStatus(),
+                request.getAmountReceived(),
+                request.getQuantity(),
+                request.getSymbol()
+        );
+
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.SELL_ORDER_CLOSE_QUEUE,
+                request
+        );
+    }
+
 }

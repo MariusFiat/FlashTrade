@@ -1,4 +1,4 @@
-package com.example.user_service.messaging.dto;
+package com.example.trading_service.messaging.dto;
 
 import lombok.Data;
 

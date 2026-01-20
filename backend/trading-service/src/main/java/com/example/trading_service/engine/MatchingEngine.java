@@ -20,7 +20,6 @@ public class MatchingEngine {
 
         while (incoming.remainingQty() > 0) {
 
-
             Order matchedOrder;
 
             if(incoming.getSide() == OrderSide.BUY){

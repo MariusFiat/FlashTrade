@@ -21,6 +21,7 @@ public class RabbitMQConfig {
     // Queue names
     public static final String ORDER_COMMAND_QUEUE = "order.command.queue";
     public static final String ORDER_EVENT_QUEUE = "order.event.queue";
+    public static final String ORDER_CANCEL_QUEUE  = "order.cancel.queue";
 
     // Routing keys
     public static final String ORDER_PLACE_KEY = "order.place";
@@ -46,7 +47,8 @@ public class RabbitMQConfig {
     public static final String ORDER_RESPONSE_QUEUE = "trading_order_response_queue";
     public static final String SELL_RESPONSE_QUEUE = "trading_sell_response_queue";
 
-    public static final String TRADE_SETTLEMENT_QUEUE = "trade_settlement_queue";
+    public static final String BUY_ORDER_CLOSE_QUEUE = "buy_order_close_queue";
+    public static final String SELL_ORDER_CLOSE_QUEUE = "sell_order_close_queue";
 
 
     @Bean
@@ -110,8 +112,13 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Queue tradeSettlementQueue() {
-        return new Queue(TRADE_SETTLEMENT_QUEUE, true);
+    public Queue buyOrderCloseQueue() {
+        return new Queue(BUY_ORDER_CLOSE_QUEUE, true);
+    }
+
+    @Bean
+    public Queue sellOrderCloseQueue() {
+        return new Queue(SELL_ORDER_CLOSE_QUEUE, true);
     }
 
     //Stock price update -> user_service end
@@ -140,6 +147,7 @@ public class RabbitMQConfig {
 
         factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(jsonMessageConverter());
+        factory.setDefaultRequeueRejected(false);
 
         return factory;
     }
@@ -162,6 +170,11 @@ public class RabbitMQConfig {
         return new Queue(ORDER_COMMAND_QUEUE, true);
     }
 
+    @Bean
+    public Queue orderCancelQueue() {
+        return new Queue(ORDER_CANCEL_QUEUE, true);
+    }
+
     // Binding: Commands Exchange -> Order Command Queue
     @Bean
     public Binding orderPlaceBinding() {
@@ -174,16 +187,9 @@ public class RabbitMQConfig {
     @Bean
     public Binding orderCancelBinding() {
         return BindingBuilder
-                .bind(orderCommandQueue())
+                .bind(orderCancelQueue())
                 .to(tradingCommandsExchange())
                 .with(ORDER_CANCEL_KEY);
     }
 
-    @Bean
-    public Binding orderUpdateBinding() {
-        return BindingBuilder
-                .bind(orderCommandQueue())
-                .to(tradingCommandsExchange())
-                .with(ORDER_UPDATE_KEY);
-    }
 }

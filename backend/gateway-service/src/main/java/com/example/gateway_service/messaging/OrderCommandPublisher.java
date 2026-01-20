@@ -3,6 +3,7 @@ package com.example.gateway_service.messaging;
 import java.util.List;
 import java.util.UUID;
 
+import com.example.gateway_service.messaging.dto.CancelOrderCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -38,8 +39,18 @@ public class OrderCommandPublisher {
     
     public String publishCancelOrderCommand(Long orderId, String userId) {
         String correlationId = UUID.randomUUID().toString();
-        
-        // TODO: Create CancelOrderCommand DTO
+
+        CancelOrderCommand cmd = new CancelOrderCommand(
+                orderId,
+                userId,
+                correlationId
+        );
+
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.TRADING_COMMANDS_EXCHANGE,
+                RabbitMQConfig.ORDER_CANCEL_KEY,
+                cmd
+        );
         log.info("📤 Published cancel order command: orderId={}, correlationId={}", 
                 orderId, correlationId);
         

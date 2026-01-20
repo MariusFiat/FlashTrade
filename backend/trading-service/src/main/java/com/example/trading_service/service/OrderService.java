@@ -9,8 +9,8 @@ import com.example.trading_service.entities.trade.Trade;
 import com.example.trading_service.messaging.OrderEventPublisher;
 import com.example.trading_service.messaging.TradeSettlementPublisher;
 import com.example.trading_service.messaging.WalletVerificationPublisher;
-import com.example.trading_service.messaging.dto.TradeSettlementEvent;
-import com.example.trading_service.messaging.dto.WalletVerificationResponse;
+import com.example.trading_service.messaging.dto.BuyOrderCloseRequest;
+import com.example.trading_service.messaging.dto.SellOrderCloseRequest;
 import com.example.trading_service.repository.StockRepository;
 import com.example.trading_service.repository.TradeRepository;
 import jakarta.transaction.Transactional;
@@ -102,7 +102,7 @@ public class OrderService {
                     order.setOriginalQty(command.getQuantity());
                     order.setSide(OrderSide.valueOf(command.getSide()));
                     order.setFilledQty(0);
-                    order.setStatus(OrderStatus.OPEN);
+                    order.setStatus(OrderStatus.PENDING_WALLET);
                     order.setPrice(currentPrice);
                     order.setCreatedAt(Instant.now());
 
@@ -119,29 +119,28 @@ public class OrderService {
                             correlationId
                     );
 
-                    CompletableFuture<WalletVerificationResponse> walletFuture = walletCoordinator.register(correlationId);
+                    CompletableFuture<Boolean> walletFuture = walletCoordinator.register(order.getId().toString());
 
                     log.info(
-                            "Registering wallet verification future for correlationId={}",
-                            correlationId
+                            "Registering wallet verification future for orderId={}",
+                            order.getId()
                     );
 
                     if (order.getSide() == OrderSide.BUY){
-                        BigDecimal cost = currentPrice.multiply(BigDecimal.valueOf(order.getOriginalQty()));
                         walletPublisher.sendBuyOrderVerification(
-                                order.getUserId().toString(),
                                 order.getId(),
-                                cost,
-                                correlationId
+                                order.getUserId(),
+                                symbol,
+                                order.getOriginalQty(),
+                                currentPrice.doubleValue()
                         );
 
                     }else {
                         walletPublisher.sendSellOrderVerification(
-                                order.getUserId().toString(),
                                 order.getId(),
+                                order.getUserId(),
                                 symbol,
-                                order.getOriginalQty(),
-                                correlationId
+                                order.getOriginalQty()
                         );
                     }
                     log.info(
@@ -152,26 +151,38 @@ public class OrderService {
                     );
 
                     log.info(
-                            "Waiting for wallet verification response: correlationId={}",
+                            "Waiting for wallet verification response: orderId={}, corelationId={}",
+                            order.getId(),
                             correlationId
                     );
 
-                    WalletVerificationResponse walletResponse = walletFuture.get(120, TimeUnit.SECONDS);
+                    boolean approved;
+                    try {
+                        approved = walletFuture.get(120, TimeUnit.SECONDS);
+                    } catch (CancellationException e) {
+                        log.info(
+                                "Wallet verification canceled for orderId={}, correlationId={}",
+                                order.getId(), correlationId
+                        );
+
+                        order.setStatus(OrderStatus.CANCELED);
+                        orderRepository.save(order);
+                        return; // ⛔ STOP processing this order
+                    }
 
                     log.info(
-                            "Wallet response RECEIVED: orderId={}, approved={}, correlationId={}",
-                            walletResponse.getOrderId(),
-                            walletResponse.isApproved(),
-                            walletResponse.getCorrelationId()
+                            "Wallet response RECEIVED: orderId={}, approved={}",
+                            order.getId(),
+                            approved
                     );
 
-                    if (!walletResponse.isApproved()) {
+                    if (!approved) {
                         order.setStatus(OrderStatus.REJECTED);
                         incomingOrdersToSave.add(order);
 
                         eventPublisher.publishOrderFailed(
                                 correlationId,
-                                walletResponse.getMessage()
+                                "Wallet verification failed"
                         );
                         continue;
                     }
@@ -218,7 +229,7 @@ public class OrderService {
 
                     // EVENT PUBLISHING (Immediately notify user)
                     OrderResponse response = new OrderResponse(
-                            null,
+                            order.getId(),
                             symbol,
                             order.getOriginalQty(),
                             currentPrice,
@@ -226,7 +237,11 @@ public class OrderService {
                             order.getSide()
                     );
                     eventPublisher.publishOrderCreated(response, command.getCorrelationId(), "SUCCESS", null);
-                }catch (Exception e){
+                }catch (TimeoutException e){
+                    log.error("Wallet verification timeout for command correlationId={}",
+                            command.getCorrelationId(), e);
+                    eventPublisher.publishOrderFailed(command.getCorrelationId(), "Wallet verification timeout");
+                } catch (Exception e){
                     log.error("Error processing individual order in batch: {}", command, e);
                     eventPublisher.publishOrderFailed(command.getCorrelationId(), e.getMessage());
                 }
@@ -242,19 +257,28 @@ public class OrderService {
                 tradeRepository.saveAll(allTradesToSave);
 
                 for (Trade trade : allTradesToSave) {
-                    TradeSettlementEvent settlementEvent =
-                            new TradeSettlementEvent(
-                                    trade.getId(),
-                                    trade.getSymbol(),
-                                    trade.getQuantity(),
-                                    trade.getPrice(),
-                                    trade.getBuyOrderId(),
-                                    trade.getBuyerId(),
-                                    trade.getSellOrderId(),
-                                    trade.getSellerId()
-                            );
+                    // BUY side settlement
+                    double amount = trade.getPrice().doubleValue() * trade.getQuantity();
 
-                    settlementPublisher.publish(settlementEvent);
+                    BuyOrderCloseRequest buyClose = new BuyOrderCloseRequest(
+                            String.valueOf(trade.getBuyOrderId()),
+                            trade.getBuyerId(),
+                            "MATCHED",
+                            amount,
+                            trade.getSymbol(),
+                            (double) trade.getQuantity()
+                    );
+                    settlementPublisher.publishBuyClose(buyClose);
+
+                    SellOrderCloseRequest sellClose = new SellOrderCloseRequest();
+                    sellClose.setOrderId(String.valueOf(trade.getSellOrderId()));
+                    sellClose.setUserId(trade.getSellerId());
+                    sellClose.setSymbol(trade.getSymbol());
+                    sellClose.setQuantity((double) trade.getQuantity());
+                    sellClose.setAmountReceived(amount);
+                    sellClose.setStatus("MATCHED");
+
+                    settlementPublisher.publishSellClose(sellClose);
                 }
 
 
@@ -279,10 +303,108 @@ public class OrderService {
 
         } catch (Exception e){
             log.error("Critical batch failure for symbol: {}", symbol, e);
-            // Fail all commands in this batch if the DB or Stock fetch explodes
             for(PlaceOrderCommand cmd : commands) {
                 eventPublisher.publishOrderFailed(cmd.getCorrelationId(), "Batch Processing Failed: " + e.getMessage());
             }
         }
+    }
+
+    @Transactional
+    public void cancelOrder(Long orderId, String userId, String correlationId) {
+
+        if (orderId == null) {
+            log.error("Cancel ignored: orderId is null, correlationId={}", correlationId);
+            return;
+        }
+
+        log.info(
+                "Cancel request received: orderId={}, userId={}, correlationId={}",
+                orderId, userId, correlationId
+        );
+
+        Optional<Order> optOrder = orderRepository.findById(orderId);
+
+        if (optOrder.isEmpty()) {
+            log.warn(
+                    "Cancel ignored: order not found. orderId={}, userId={}, correlationId={}",
+                    orderId, userId, correlationId
+            );
+
+            // Idempotent cancel → notify gateway anyway
+            eventPublisher.publishOrderCanceled(correlationId, orderId);
+            return; // ✅ ACK message
+        }
+
+        Order order = optOrder.get();
+
+        if (!order.getUserId().equals(userId)) {
+            log.error("SECURITY ALERT: User {} tried to cancel order {} belonging to {}", 
+                    userId, orderId, order.getUserId());
+            return;
+        }
+
+        if (order.getStatus() == OrderStatus.FILLED ||
+                order.getStatus() == OrderStatus.CANCELED ||
+                order.getStatus() == OrderStatus.REJECTED) {
+
+            log.warn("Order cannot be canceled: orderId={}, status={}",
+                    orderId, order.getStatus());
+            return;
+        }
+
+        // If wallet verification is still pending, cancel immediately without settlement
+        if (order.getStatus() == OrderStatus.PENDING_WALLET) {
+            log.info("Canceling order while wallet verification is pending: orderId={}", orderId);
+
+            // Complete and remove pending wallet future (if exists)
+            walletCoordinator.cancel(order.getId().toString());
+
+            order.setStatus(OrderStatus.CANCELED);
+            orderRepository.save(order);
+
+            eventPublisher.publishOrderCanceled(correlationId, orderId);
+            return;
+        }
+
+
+        // Remove from order book if present
+        OrderBook book = books.get(order.getSymbol());
+        if (book != null) {
+            book.removeById(orderId);
+        }
+
+        order.setStatus(OrderStatus.CANCELED);
+        orderRepository.save(order);
+
+        log.info("Order canceled: orderId={}", orderId);
+
+        // 🔔 Notify user-service ONLY if wallet was involved
+        if (order.getSide() == OrderSide.BUY &&
+                order.getStatus() != OrderStatus.PENDING_WALLET) {
+
+            BuyOrderCloseRequest closeRequest =
+                    new BuyOrderCloseRequest(
+                            order.getId().toString(),
+                            order.getUserId(),
+                            "CLOSED",
+                            calculateRemainingReservedAmount(order),
+                            order.getSymbol(),
+                            (double) (order.getOriginalQty() - order.getFilledQty())
+                    );
+
+            settlementPublisher.publishBuyClose(closeRequest);
+        }
+
+        // SELL cancel = nothing to refund (no shares reserved)
+        eventPublisher.publishOrderCanceled(correlationId, orderId);
+    }
+
+    private Double calculateRemainingReservedAmount(Order order) {
+        BigDecimal price = order.getPrice();
+        int remainingQty = order.getOriginalQty() - order.getFilledQty();
+
+        return price
+                .multiply(BigDecimal.valueOf(remainingQty))
+                .doubleValue();
     }
 }

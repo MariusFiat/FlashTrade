@@ -78,4 +78,12 @@ public class RabbitMQConfig {
                 .to(tradingEventsExchange())
                 .with(ORDER_FAILED_KEY);
     }
+
+    @Bean
+    public Binding orderUpdateEventBinding() {
+        return BindingBuilder
+                .bind(gatewayOrderEventQueue())
+                .to(tradingEventsExchange())
+                .with(ORDER_UPDATE_KEY);
+    }
 }
