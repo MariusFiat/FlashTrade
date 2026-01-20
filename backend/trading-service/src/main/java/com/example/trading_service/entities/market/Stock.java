@@ -1,12 +1,12 @@
 package com.example.trading_service.entities.market;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "stocks")
@@ -25,6 +25,9 @@ public class Stock {
 
     @Column(nullable = false)
     private double price;
+
+    @OneToMany(mappedBy = "stock", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<StockHistory> history = new ArrayList<>();
 
     public boolean isIs_active() {
         return is_active;
