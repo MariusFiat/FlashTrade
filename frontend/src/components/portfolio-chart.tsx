@@ -2,7 +2,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useCallback } from "react"
+import { useWebSocket } from "@/hooks/useWebSocket"
+import { TransactionUpdate } from "@/services/websocket"
 
 const timeframes = ["1W", "1M", "3M", "6M", "1Y", "ALL"]
 
@@ -29,9 +31,29 @@ const generateMockData = (timeframe: string) => {
 
 export function PortfolioChart() {
   const [selectedTimeframe, setSelectedTimeframe] = useState("1Y")
+  const [chartData, setChartData] = useState(() => generateMockData("1Y"))
 
-  const mockData = useMemo(() => generateMockData(selectedTimeframe), [selectedTimeframe])
-  const isPositive = mockData[mockData.length - 1].value > mockData[0].value
+  const handleTransactionUpdate = useCallback((update: TransactionUpdate) => {
+    console.log('Transaction update received:', update);
+    setChartData(prev => {
+      const newData = [...prev];
+      const lastPoint = newData[newData.length - 1];
+      const priceChange = update.quantity * update.price;
+      newData[newData.length - 1] = {
+        ...lastPoint,
+        value: lastPoint.value + priceChange
+      };
+      return newData;
+    });
+  }, []);
+
+  useWebSocket(handleTransactionUpdate);
+
+  useMemo(() => {
+    setChartData(generateMockData(selectedTimeframe));
+  }, [selectedTimeframe]);
+
+  const isPositive = chartData[chartData.length - 1].value > chartData[0].value
   const lineColor = isPositive ? "#22c55e" : "#ef4444"
 
   return (
@@ -54,7 +76,7 @@ export function PortfolioChart() {
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={350}>
-          <AreaChart data={mockData}>
+          <AreaChart data={chartData}>
             <defs>
               <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor={lineColor} stopOpacity={0.3} />
