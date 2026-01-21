@@ -1,22 +1,20 @@
 package com.example.user_service.service;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoField;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 
+import com.example.user_service.dto.*;
+import com.example.user_service.entities.*;
+import com.example.user_service.repository.PortfolioHistoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
-import com.example.user_service.dto.PortfolioItemDTO;
-import com.example.user_service.dto.PortfolioSummaryDTO;
-import com.example.user_service.dto.TransactionHistoryDTO;
-import com.example.user_service.dto.UserProfileDTO;
-import com.example.user_service.dto.WalletDTO;
-import com.example.user_service.entities.TransactionHistory;
-import com.example.user_service.entities.User;
-import com.example.user_service.entities.UserDetails;
-import com.example.user_service.entities.Wallet;
 import com.example.user_service.model.enums.ActionType;
 import com.example.user_service.model.enums.TransactionStatus;
 import com.example.user_service.repository.TransactionHistoryRepository;
@@ -31,6 +29,8 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final TransactionHistoryRepository transactionHistoryRepository;
+    @Autowired
+    private PortfolioHistoryRepository portfolioHistoryRepository;
 
     public UserService(
             TransactionHistoryRepository transactionHistoryRepository,
@@ -246,5 +246,73 @@ public class UserService {
                 totalValue,
                 totalReturn
         );
+    }
+
+    public PortfolioPerformanceDTO getPortfolioPerformance(String range, Authentication authentication) {
+        User user = getCurrentUser(authentication);
+        Long userDetailsId = user.getUserDetails().getId();
+
+        // 1. Stabilim data de start pentru query-ul brut
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime start = switch (range.toLowerCase()) {
+            case "1w" -> now.minusWeeks(1);
+            case "1m" -> now.minusMonths(1);
+            case "3m" -> now.minusMonths(3);
+            case "6m" -> now.minusMonths(6);
+            case "1y" -> now.minusYears(1);
+            case "all" -> now.minusYears(5);
+            default -> now.minusWeeks(1);
+        };
+
+        List<PortfolioHistory> allHistory = portfolioHistoryRepository
+                .findByUserDetailsIdAndSnapshotDateBetweenOrderBySnapshotDateAsc(userDetailsId, start, now);
+
+        List<PortfolioPerformanceDTO.HistoryPoint> filteredPoints = filterPoints(allHistory, range.toLowerCase());
+
+        Double currentValue = allHistory.isEmpty() ? 0.0 : allHistory.get(allHistory.size() - 1).getTotalValue();
+
+        return new PortfolioPerformanceDTO(filteredPoints, currentValue);
+    }
+
+    private List<PortfolioPerformanceDTO.HistoryPoint> filterPoints(List<PortfolioHistory> rawData, String range) {
+        if (rawData.isEmpty()) return List.of();
+
+        return switch (range) {
+            case "1w" -> rawData.stream()
+                    .filter(h -> h.getSnapshotDate().getDayOfWeek().getValue() <= 5)
+                    .map(h -> new PortfolioPerformanceDTO.HistoryPoint(h.getTotalValue(), h.getSnapshotDate()))
+                    .limit(5)
+                    .toList();
+
+            case "1m" -> {
+                yield rawData.stream()
+                        .collect(Collectors.groupingBy(h ->
+                                        h.getSnapshotDate().getYear() + "-" + (h.getSnapshotDate().get(ChronoField.ALIGNED_WEEK_OF_YEAR)),
+                                TreeMap::new,
+                                Collectors.maxBy(Comparator.comparing(PortfolioHistory::getSnapshotDate))
+                        ))
+                        .values().stream()
+                        .flatMap(Optional::stream)
+                        .map(h -> new PortfolioPerformanceDTO.HistoryPoint(h.getTotalValue(), h.getSnapshotDate()))
+                        .toList();
+            }
+
+            case "3m", "6m", "1y" -> {
+                yield rawData.stream()
+                        .collect(Collectors.groupingBy(h ->
+                                        h.getSnapshotDate().getYear() + "-" + h.getSnapshotDate().getMonthValue(),
+                                TreeMap::new,
+                                Collectors.maxBy(Comparator.comparing(PortfolioHistory::getSnapshotDate))
+                        ))
+                        .values().stream()
+                        .flatMap(Optional::stream)
+                        .map(h -> new PortfolioPerformanceDTO.HistoryPoint(h.getTotalValue(), h.getSnapshotDate()))
+                        .toList();
+            }
+
+            default -> rawData.stream()
+                    .map(h -> new PortfolioPerformanceDTO.HistoryPoint(h.getTotalValue(), h.getSnapshotDate()))
+                    .toList();
+        };
     }
 }
