@@ -6,8 +6,6 @@ from tensorflow import keras
 def create_model(input_shape):
     """
     Creates an LSTM model for stock price prediction
-
-    LSTM = Long Short-Term Memory
     - A type of neural network good for time series data
     - "Remembers" patterns from past prices
     """
@@ -35,7 +33,6 @@ def create_model(input_shape):
 def prepare_data(prices, lookback=60):
     """
     Prepares data for LSTM
-
     lookback = how many days to look back
     Example: Use last 60 days to predict day 61
     """

@@ -11,7 +11,7 @@ import java.time.Instant;
 @Data
 public class Order {
     @Id
-    @GeneratedValue(strategy = jakarta.persistence.GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)
@@ -46,40 +46,5 @@ public class Order {
 
     public int remainingQty(){
         return originalQty - filledQty;
-    }
-
-    public Long getId() { return id; }
-    public void setId(Long id) {
-        this.id = id;
-    }
-    public String getUserId() { return userId; }
-    public void setUserId(String userId) { this.userId = userId; }
-    public String getSymbol() {
-        return symbol;
-    }
-    public void setSymbol(String symbol) {
-        this.symbol = symbol;
-    }
-    public BigDecimal getPrice() { return price; }
-    public void setPrice(BigDecimal price) {
-        this.price = price;
-    }
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-    public int getOriginalQty() { return originalQty; }
-    public void setOriginalQty(int originalQty) { this.originalQty = originalQty; }
-    public int getFilledQty() { return filledQty;}
-    public void setFilledQty(int filledQty) { this.filledQty = filledQty; }
-    public OrderStatus getStatus() { return status; }
-    public void setStatus(OrderStatus status) { this.status = status; }
-    public OrderSide getSide() { return side; }
-    public void setSide(OrderSide side) { this.side = side; }
-
-    public OrderSide getOrderSide() {
-        return side;
     }
 }
