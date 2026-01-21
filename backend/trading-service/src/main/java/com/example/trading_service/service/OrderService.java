@@ -167,7 +167,7 @@ public class OrderService {
 
                         order.setStatus(OrderStatus.CANCELED);
                         orderRepository.save(order);
-                        return; // ⛔ STOP processing this order
+                        return;
                     }
 
                     log.info(
@@ -227,7 +227,6 @@ public class OrderService {
 
                     System.out.println("MakerOrderIdsToUpdate" + makerOrderIdsToUpdate);
 
-                    // EVENT PUBLISHING (Immediately notify user)
                     OrderResponse response = new OrderResponse(
                             order.getId(),
                             symbol,
@@ -257,7 +256,7 @@ public class OrderService {
                 tradeRepository.saveAll(allTradesToSave);
 
                 for (Trade trade : allTradesToSave) {
-                    // BUY side settlement
+
                     double amount = trade.getPrice().doubleValue() * trade.getQuantity();
 
                     BuyOrderCloseRequest buyClose = new BuyOrderCloseRequest(
@@ -330,9 +329,8 @@ public class OrderService {
                     orderId, userId, correlationId
             );
 
-            // Idempotent cancel → notify gateway anyway
             eventPublisher.publishOrderCanceled(correlationId, orderId);
-            return; // ✅ ACK message
+            return;
         }
 
         Order order = optOrder.get();
@@ -356,7 +354,6 @@ public class OrderService {
         if (order.getStatus() == OrderStatus.PENDING_WALLET) {
             log.info("Canceling order while wallet verification is pending: orderId={}", orderId);
 
-            // Complete and remove pending wallet future (if exists)
             walletCoordinator.cancel(order.getId().toString());
 
             order.setStatus(OrderStatus.CANCELED);
@@ -366,8 +363,6 @@ public class OrderService {
             return;
         }
 
-
-        // Remove from order book if present
         OrderBook book = books.get(order.getSymbol());
         if (book != null) {
             book.removeById(orderId);
@@ -378,7 +373,6 @@ public class OrderService {
 
         log.info("Order canceled: orderId={}", orderId);
 
-        // 🔔 Notify user-service ONLY if wallet was involved
         if (order.getSide() == OrderSide.BUY &&
                 order.getStatus() != OrderStatus.PENDING_WALLET) {
 
@@ -395,7 +389,6 @@ public class OrderService {
             settlementPublisher.publishBuyClose(closeRequest);
         }
 
-        // SELL cancel = nothing to refund (no shares reserved)
         eventPublisher.publishOrderCanceled(correlationId, orderId);
     }
 

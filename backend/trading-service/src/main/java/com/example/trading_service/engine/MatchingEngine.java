@@ -32,11 +32,8 @@ public class MatchingEngine {
 
             if (matchedOrder == null) break;
 
-            // Prevent Self-Trading (Wash Trading)
+            // Prevent Self-Trading
             if (matchedOrder.getUserId().equals(incoming.getUserId())) {
-                // Option A: Skip this order and look at the next one (requires iterating the queue)
-                // Option B: Cancel the incoming order
-                // Option C (Simplest for now): Just break/stop matching
                 break;
             }
 

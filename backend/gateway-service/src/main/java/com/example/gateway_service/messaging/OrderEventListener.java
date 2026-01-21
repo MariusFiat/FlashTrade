@@ -13,7 +13,7 @@ public class OrderEventListener {
     
     @RabbitListener(queues = RabbitMQConfig.GATEWAY_ORDER_EVENT_QUEUE)
     public void handleOrderEvent(OrderCreatedEvent event) {
-        log.info("📨 Gateway received order event: correlationId={}, status={}, orderId={}", 
+        log.info("Gateway received order event: correlationId={}, status={}, orderId={}",
                 event.getCorrelationId(), event.getStatus(), event.getOrderId());
         
         if ("SUCCESS".equals(event.getStatus())) {

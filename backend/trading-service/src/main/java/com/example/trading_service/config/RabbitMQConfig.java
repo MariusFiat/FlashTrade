@@ -24,6 +24,9 @@ public class RabbitMQConfig {
     public static final String ORDER_COMMAND_QUEUE = "order.command.queue";
     public static final String ORDER_EVENT_QUEUE = "order.event.queue";
     public static final String ORDER_CANCEL_QUEUE  = "order.cancel.queue";
+    public static final String TRADE_HISTORY_REQUEST_QUEUE = "trade.history.request.queue";
+    public static final String ACTIVE_ORDERS_REQUEST_QUEUE = "active.orders.request.queue";
+    public static final String MARKET_DATA_REQUEST_QUEUE = "market.data.request.queue";
 
     // Routing keys
     public static final String ORDER_PLACE_KEY = "order.place";
@@ -32,6 +35,9 @@ public class RabbitMQConfig {
     public static final String ORDER_CREATED_KEY = "order.created";
     public static final String ORDER_EXECUTED_KEY = "order.executed";
     public static final String ORDER_FAILED_KEY = "order.failed";
+    public static final String TRADE_HISTORY_KEY = "trade.history";
+    public static final String ACTIVE_ORDERS_KEY = "active.orders";
+    public static final String MARKET_DATA_KEY = "market.data";
 
     // Wallet Verification Queues & Exchanges
     public static final String BUY_ORDER_QUEUE = "buy_order_request_queue";
@@ -204,6 +210,21 @@ public class RabbitMQConfig {
     public Queue orderCancelQueue() {
         return new Queue(ORDER_CANCEL_QUEUE, true);
     }
+    
+    @Bean
+    public Queue tradeHistoryRequestQueue() {
+        return new Queue(TRADE_HISTORY_REQUEST_QUEUE);
+    }
+
+    @Bean
+    public Queue activeOrdersRequestQueue() {
+        return new Queue(ACTIVE_ORDERS_REQUEST_QUEUE);
+    }
+
+    @Bean
+    public Queue marketDataRequestQueue() {
+        return new Queue(MARKET_DATA_REQUEST_QUEUE);
+    }
 
     // Binding: Commands Exchange -> Order Command Queue
     @Bean
@@ -221,6 +242,30 @@ public class RabbitMQConfig {
                 .bind(orderCancelQueue())
                 .to(tradingCommandsExchange())
                 .with(ORDER_CANCEL_KEY);
+    }
+    
+    @Bean
+    public Binding tradeHistoryBinding() {
+        return BindingBuilder
+                .bind(tradeHistoryRequestQueue())
+                .to(tradingCommandsExchange())
+                .with(TRADE_HISTORY_KEY);
+    }
+
+    @Bean
+    public Binding activeOrdersBinding() {
+        return BindingBuilder
+                .bind(activeOrdersRequestQueue())
+                .to(tradingCommandsExchange())
+                .with(ACTIVE_ORDERS_KEY);
+    }
+
+    @Bean
+    public Binding marketDataBinding() {
+        return BindingBuilder
+                .bind(marketDataRequestQueue())
+                .to(tradingCommandsExchange())
+                .with(MARKET_DATA_KEY);
     }
 
 }

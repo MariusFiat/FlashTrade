@@ -25,7 +25,7 @@ public class OrderCancelListener {
     public void onCancelOrder(CancelOrderCommand command) {
         if (command.getOrderId() == null) {
             log.error("Received cancel command with NULL orderId: {}", command);
-            return; // ⛔ DO NOT TOUCH DB
+            return;
         }
 
         log.info(
