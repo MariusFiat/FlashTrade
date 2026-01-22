@@ -1,8 +1,31 @@
 package com.example.trading_service.service;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+import com.example.trading_service.dto.OrderResponse;
 import com.example.trading_service.engine.MatchingEngine;
 import com.example.trading_service.engine.OrderBook;
 import com.example.trading_service.entities.market.Stock;
+import com.example.trading_service.entities.order.Order;
 import com.example.trading_service.entities.order.OrderSide;
 import com.example.trading_service.entities.order.OrderStatus;
 import com.example.trading_service.entities.trade.Trade;
@@ -10,21 +33,13 @@ import com.example.trading_service.messaging.OrderEventPublisher;
 import com.example.trading_service.messaging.TradeSettlementPublisher;
 import com.example.trading_service.messaging.WalletVerificationPublisher;
 import com.example.trading_service.messaging.dto.BuyOrderCloseRequest;
+import com.example.trading_service.messaging.dto.PlaceOrderCommand;
 import com.example.trading_service.messaging.dto.SellOrderCloseRequest;
+import com.example.trading_service.repository.OrderRepository;
 import com.example.trading_service.repository.StockRepository;
 import com.example.trading_service.repository.TradeRepository;
+
 import jakarta.transaction.Transactional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
-import com.example.trading_service.dto.OrderResponse;
-import com.example.trading_service.entities.order.Order;
-import com.example.trading_service.messaging.dto.PlaceOrderCommand;
-import com.example.trading_service.repository.OrderRepository;
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.*;
-import java.util.concurrent.*;
 
 @Service
 public class OrderService {
@@ -233,7 +248,8 @@ public class OrderService {
                             order.getOriginalQty(),
                             currentPrice,
                             order.getCreatedAt(),
-                            order.getSide()
+                            order.getSide(),
+                            command.getUserId()
                     );
                     eventPublisher.publishOrderCreated(response, command.getCorrelationId(), "SUCCESS", null);
                 }catch (TimeoutException e){

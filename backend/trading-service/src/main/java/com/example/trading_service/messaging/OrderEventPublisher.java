@@ -26,7 +26,7 @@ public class OrderEventPublisher {
                 order.getQuantity(),
                 order.getPrice(),
                 order.getOrderSide(),
-                null,  // userId can be added later
+                order.getUserId(),
                 order.getCreatedAt(),
                 correlationId,
                 status,
