@@ -357,7 +357,7 @@ public class OrderService {
                     orderId, userId, correlationId
             );
 
-            eventPublisher.publishOrderCanceled(correlationId, orderId);
+            eventPublisher.publishOrderCanceled(correlationId, orderId, userId);
             return;
         }
 
@@ -387,7 +387,7 @@ public class OrderService {
             order.setStatus(OrderStatus.CANCELED);
             orderRepository.save(order);
 
-            eventPublisher.publishOrderCanceled(correlationId, orderId);
+            eventPublisher.publishOrderCanceled(correlationId, orderId, userId);
             return;
         }
 
@@ -417,7 +417,7 @@ public class OrderService {
             settlementPublisher.publishBuyClose(closeRequest);
         }
 
-        eventPublisher.publishOrderCanceled(correlationId, orderId);
+        eventPublisher.publishOrderCanceled(correlationId, orderId, userId);
     }
 
     private Double calculateRemainingReservedAmount(Order order) {

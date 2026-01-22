@@ -81,9 +81,10 @@ public class OrderEventPublisher {
         log.info("Published order failed event: correlationId={}, error={}", correlationId, errorMessage);
     }
 
-    public void publishOrderCanceled(String correlationId, Long orderId) {
+    public void publishOrderCanceled(String correlationId, Long orderId, String userId) {
         OrderCreatedEvent event = new OrderCreatedEvent();
         event.setOrderId(orderId);
+        event.setUserId(userId);
         event.setCorrelationId(correlationId);
         event.setStatus("CANCELED");
 
@@ -93,7 +94,6 @@ public class OrderEventPublisher {
                 event
         );
 
-        log.info("Published order canceled event: orderId={}, correlationId={}", orderId, correlationId);
-
+        log.info("Published order canceled event: orderId={}, userId={}, correlationId={}", orderId, userId, correlationId);
     }
 }

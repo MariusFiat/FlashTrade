@@ -14,10 +14,12 @@ import java.util.UUID;
 @Service
 public class MarketDataService {
     private static final Logger log = LoggerFactory.getLogger(MarketDataService.class);
+    private static final long REPLY_TIMEOUT_MS = 15000; // 15 seconds
     private final RabbitTemplate rabbitTemplate;
 
     public MarketDataService(RabbitTemplate rabbitTemplate) {
         this.rabbitTemplate = rabbitTemplate;
+        this.rabbitTemplate.setReplyTimeout(REPLY_TIMEOUT_MS);
     }
 
     public MarketDataResponse getAllStocks() {

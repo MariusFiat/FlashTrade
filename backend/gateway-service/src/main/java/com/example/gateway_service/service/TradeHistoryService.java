@@ -16,12 +16,13 @@ import java.util.UUID;
 @Service
 public class TradeHistoryService {
     private static final Logger log = LoggerFactory.getLogger(TradeHistoryService.class);
+    private static final long REPLY_TIMEOUT_MS = 15000; // 15 seconds
     private final RabbitTemplate rabbitTemplate;
 
     public TradeHistoryService(RabbitTemplate rabbitTemplate) {
         this.rabbitTemplate = rabbitTemplate;
-        // Set a timeout for RPC calls (e.g., 5 seconds)
-        this.rabbitTemplate.setReplyTimeout(5000);
+        // Set a timeout for RPC calls
+        this.rabbitTemplate.setReplyTimeout(REPLY_TIMEOUT_MS);
     }
 
     public TradeHistoryResponse getUserTradeHistory(String userId) {
