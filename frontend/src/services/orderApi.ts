@@ -56,7 +56,7 @@ class OrderApiService {
     }
 
     const data = await response.json();
-    return data.orders || [];
+    return data.activeOrders || [];
   }
 }
 

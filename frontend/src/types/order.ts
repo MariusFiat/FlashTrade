@@ -23,11 +23,12 @@ export interface CancelOrderResponse {
 
 export interface ActiveOrder {
   orderId: number;
-  userId: string;
+  userId?: string;
   symbol: string;
   side: 'BUY' | 'SELL';
-  quantity: number;
+  originalQty: number;
+  filledQty?: number;
   price: number;
   status: string;
-  timestamp: string;
+  createdAt: string;
 }

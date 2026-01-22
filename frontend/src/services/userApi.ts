@@ -130,7 +130,9 @@ class UserApiService {
       throw new Error('Failed to fetch portfolio');
     }
 
-    return response.json();
+    const data = await response.json();
+    console.log('Portfolio API Response:', data);
+    return data;
   }
 
   async getPortfolioPerformance(range: string = '1w'): Promise<PortfolioPerformance> {

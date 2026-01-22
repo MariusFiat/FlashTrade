@@ -99,7 +99,7 @@ export function ActiveOrders() {
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {order.quantity} shares @ ${order.price.toFixed(2)}
+                      {order.originalQty} shares @ ${order.price.toFixed(2)}
                     </p>
                   </div>
                 </div>
@@ -108,7 +108,7 @@ export function ActiveOrders() {
                     <Badge variant={order.status === "EXECUTING" ? "default" : "secondary"} className="mb-1">
                       {order.status}
                     </Badge>
-                    <p className="text-xs text-muted-foreground">{formatTime(order.timestamp)}</p>
+                    <p className="text-xs text-muted-foreground">{formatTime(order.createdAt)}</p>
                   </div>
                   <div className="flex gap-2">
                     <Button 
