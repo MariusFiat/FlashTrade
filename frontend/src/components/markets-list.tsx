@@ -3,96 +3,59 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Search, Star, TrendingUp, TrendingDown } from "lucide-react"
-import { useState } from "react"
+import { Search, Star, TrendingUp, TrendingDown, Loader2 } from "lucide-react"
+import { useState, useEffect } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-
-const allStocks = [
-  {
-    symbol: "AAPL",
-    name: "Apple Inc.",
-    price: 151.89,
-    change: 2.34,
-    changePercent: 1.56,
-    volume: "52.4M",
-    marketCap: "2.4T",
-    sector: "Technology",
-  },
-  {
-    symbol: "TSLA",
-    name: "Tesla Inc.",
-    price: 245.8,
-    change: 9.75,
-    changePercent: 4.12,
-    volume: "89.2M",
-    marketCap: "780.5B",
-    sector: "Automotive",
-  },
-  {
-    symbol: "GOOGL",
-    name: "Alphabet Inc.",
-    price: 142.5,
-    change: -1.23,
-    changePercent: -0.85,
-    volume: "28.7M",
-    marketCap: "1.8T",
-    sector: "Technology",
-  },
-  {
-    symbol: "MSFT",
-    name: "Microsoft Corp.",
-    price: 395.2,
-    change: 6.5,
-    changePercent: 1.67,
-    volume: "31.5M",
-    marketCap: "2.9T",
-    sector: "Technology",
-  },
-  {
-    symbol: "NVDA",
-    name: "NVIDIA Corp.",
-    price: 489.3,
-    change: 24.35,
-    changePercent: 5.23,
-    volume: "42.1M",
-    marketCap: "1.2T",
-    sector: "Technology",
-  },
-  {
-    symbol: "AMZN",
-    name: "Amazon.com Inc.",
-    price: 172.4,
-    change: 1.57,
-    changePercent: 0.92,
-    volume: "38.9M",
-    marketCap: "1.7T",
-    sector: "E-commerce",
-  },
-  {
-    symbol: "META",
-    name: "Meta Platforms",
-    price: 325.5,
-    change: -4.2,
-    changePercent: -1.27,
-    volume: "25.3M",
-    marketCap: "845.2B",
-    sector: "Social Media",
-  },
-  {
-    symbol: "AMD",
-    name: "Advanced Micro Devices",
-    price: 125.8,
-    change: 3.45,
-    changePercent: 2.82,
-    volume: "45.7M",
-    marketCap: "203.5B",
-    sector: "Technology",
-  },
-]
+import { stockApi } from "@/services/stockApi"
+import { useToast } from "@/hooks/use-toast"
+import type { Stock } from "@/types/stock"
 
 export function MarketsList() {
   const [searchTerm, setSearchTerm] = useState("")
   const [watchlist, setWatchlist] = useState<string[]>(["AAPL", "TSLA", "NVDA"])
+  const [allStocks, setAllStocks] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const { toast } = useToast()
+
+  useEffect(() => {
+    const fetchStocks = async () => {
+      try {
+        const response = await stockApi.getAllStocks()
+        // Transform backend Stock data to match component format
+        const transformedStocks = response.stocks.map((stock: Stock) => ({
+          symbol: stock.symbol,
+          name: stock.name,
+          price: stock.price,
+          change: stock.change,
+          changePercent: (stock.change / (stock.price - stock.change)) * 100,
+          volume: "N/A",
+          marketCap: "N/A",
+          sector: "Technology"
+        }))
+        setAllStocks(transformedStocks)
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to fetch market data",
+          variant: "destructive",
+        })
+        // Keep empty array or use fallback data
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchStocks()
+  }, [])
+
+  if (isLoading) {
+    return (
+      <Card className="bg-card border-border/50">
+        <CardContent className="flex justify-center items-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </CardContent>
+      </Card>
+    )
+  }
 
   const filteredStocks = allStocks.filter(
     (stock) =>
