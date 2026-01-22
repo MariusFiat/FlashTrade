@@ -4,7 +4,6 @@ import com.example.trading_service.config.RabbitMQConfig;
 import com.example.trading_service.entities.order.OrderSide;
 import com.example.trading_service.messaging.dto.BuyOrderRequest;
 import com.example.trading_service.messaging.dto.SellOrderRequest;
-import com.example.trading_service.messaging.dto.WalletVerificationRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;

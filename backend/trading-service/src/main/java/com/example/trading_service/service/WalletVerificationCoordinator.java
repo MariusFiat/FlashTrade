@@ -1,6 +1,4 @@
 package com.example.trading_service.service;
-
-import com.example.trading_service.messaging.dto.WalletVerificationResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

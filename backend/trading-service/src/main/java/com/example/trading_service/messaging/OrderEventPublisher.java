@@ -41,6 +41,30 @@ public class OrderEventPublisher {
         
         log.info("Published order created event: orderId={}, status={}", order.getId(), status);
     }
+
+    // Overload for Maker updates where we might want to pass userId explicitly if OrderResponse doesn't have it
+    public void publishOrderUpdate(OrderResponse order, String userId, String correlationId, String status) {
+        OrderCreatedEvent event = new OrderCreatedEvent(
+                order.getId(),
+                order.getSymbol(),
+                order.getQuantity(),
+                order.getPrice(),
+                order.getOrderSide(),
+                userId,
+                order.getCreatedAt(),
+                correlationId,
+                status,
+                null
+        );
+
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.TRADING_EVENTS_EXCHANGE,
+                RabbitMQConfig.ORDER_CREATED_KEY, // Reuse created key or use update key
+                event
+        );
+
+        log.info("Published maker order update event: orderId={}, userId={}, status={}", order.getId(), userId, status);
+    }
     
     public void publishOrderFailed(String correlationId, String errorMessage) {
         OrderCreatedEvent event = new OrderCreatedEvent();

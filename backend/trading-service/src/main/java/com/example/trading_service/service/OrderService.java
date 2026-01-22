@@ -293,6 +293,18 @@ public class OrderService {
                             maker.setStatus(OrderStatus.FILLED);
                         }
                         System.out.println("Maker:" + maker);
+                        
+                        // Notify Maker
+                        OrderResponse makerResponse = new OrderResponse(
+                                maker.getId(),
+                                maker.getSymbol(),
+                                maker.getOriginalQty(),
+                                maker.getPrice(),
+                                maker.getCreatedAt(),
+                                maker.getSide()
+                        );
+                        // Use userId as correlationId placeholder or just rely on userId topic
+                        eventPublisher.publishOrderUpdate(makerResponse, maker.getUserId(), "MAKER_UPDATE", "SUCCESS");
                     }
                     orderRepository.saveAll(makersToUpdate);
                     orderRepository.flush();

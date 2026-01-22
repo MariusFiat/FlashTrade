@@ -3,7 +3,6 @@ package com.example.trading_service.messaging;
 import com.example.trading_service.config.RabbitMQConfig;
 import com.example.trading_service.messaging.dto.BuyOrderResponse;
 import com.example.trading_service.messaging.dto.SellOrderResponse;
-import com.example.trading_service.messaging.dto.WalletVerificationResponse;
 import com.example.trading_service.service.WalletVerificationCoordinator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

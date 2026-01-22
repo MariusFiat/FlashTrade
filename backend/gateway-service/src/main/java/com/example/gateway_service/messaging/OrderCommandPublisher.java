@@ -31,7 +31,7 @@ public class OrderCommandPublisher {
                 command
         );
         
-        log.info("📤 Published place order command: symbol={}, quantity={}, correlationId={}", 
+        log.info("Published place order command: symbol={}, quantity={}, correlationId={}",
                 command.getSymbol(), command.getQuantity(), correlationId);
         
         return correlationId;
@@ -51,7 +51,7 @@ public class OrderCommandPublisher {
                 RabbitMQConfig.ORDER_CANCEL_KEY,
                 cmd
         );
-        log.info("📤 Published cancel order command: orderId={}, correlationId={}", 
+        log.info("Published cancel order command: orderId={}, correlationId={}",
                 orderId, correlationId);
         
         return correlationId;

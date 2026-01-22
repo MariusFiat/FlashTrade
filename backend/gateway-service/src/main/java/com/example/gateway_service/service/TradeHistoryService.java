@@ -31,7 +31,6 @@ public class TradeHistoryService {
         log.info("Requesting trade history for userId={}, correlationId={}", userId, correlationId);
 
         // Perform RPC call
-        // Note: convertSendAndReceiveAsType requires Spring AMQP 2.0+
         TradeHistoryResponse response = rabbitTemplate.convertSendAndReceiveAsType(
                 RabbitMQConfig.TRADING_COMMANDS_EXCHANGE,
                 RabbitMQConfig.TRADE_HISTORY_KEY,
