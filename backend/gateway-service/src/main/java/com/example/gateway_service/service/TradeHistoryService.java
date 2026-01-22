@@ -5,8 +5,6 @@ import com.example.gateway_service.messaging.dto.TradeHistoryRequest;
 import com.example.gateway_service.messaging.dto.TradeHistoryResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;

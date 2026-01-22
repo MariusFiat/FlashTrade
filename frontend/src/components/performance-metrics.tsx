@@ -29,14 +29,14 @@ export function PerformanceMetrics() {
 
       if (portfolio.items && portfolio.items.length > 0) {
         // Calculate best and worst performers based on allocation
-        const sortedByAllocation = [...portfolio.items].sort((a, b) => b.allocation - a.allocation)
+        const sortedByAllocation = [...portfolio.items].sort((a, b) => (b.allocation ?? 0) - (a.allocation ?? 0))
         const bestPerformer = sortedByAllocation[0]
         const worstPerformer = sortedByAllocation[sortedByAllocation.length - 1]
 
         calculatedMetrics.push({
           label: "Best Performer",
           stock: bestPerformer.stock,
-          value: `${bestPerformer.allocation.toFixed(2)}%`,
+          value: `${(bestPerformer.allocation ?? 0).toFixed(2)}%`,
           isPositive: true,
         })
 
@@ -44,8 +44,8 @@ export function PerformanceMetrics() {
           calculatedMetrics.push({
             label: "Worst Performer",
             stock: worstPerformer.stock,
-            value: `${worstPerformer.allocation.toFixed(2)}%`,
-            isPositive: worstPerformer.allocation < 0,
+            value: `${(worstPerformer.allocation ?? 0).toFixed(2)}%`,
+            isPositive: (worstPerformer.allocation ?? 0) < 0,
           })
         }
 
@@ -57,14 +57,16 @@ export function PerformanceMetrics() {
         })
 
         // Total Return
-        if (portfolio.totalReturn !== undefined) {
-          const returnPercent = portfolio.totalInvested > 0 
-            ? ((portfolio.totalReturn / portfolio.totalInvested) * 100) 
+        if (portfolio.totalReturn !== undefined && portfolio.totalReturn !== null) {
+          const totalInvested = portfolio.totalInvested ?? 0
+          const totalReturn = portfolio.totalReturn ?? 0
+          const returnPercent = totalInvested > 0 
+            ? ((totalReturn / totalInvested) * 100) 
             : 0
           calculatedMetrics.push({
             label: "Total Return",
             value: returnPercent >= 0 ? `+${returnPercent.toFixed(2)}%` : `${returnPercent.toFixed(2)}%`,
-            subtitle: `$${portfolio.totalReturn.toFixed(2)}`,
+            subtitle: `$${totalReturn.toFixed(2)}`,
             isPositive: returnPercent >= 0,
           })
         }
