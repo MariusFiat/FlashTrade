@@ -27,14 +27,17 @@ import jakarta.transaction.Transactional;
 @Service
 public class UserService {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
     private final TransactionHistoryRepository transactionHistoryRepository;
     @Autowired
     private PortfolioHistoryRepository portfolioHistoryRepository;
 
-    public UserService(TransactionHistoryRepository transactionHistoryRepository) {
+    public UserService(
+            TransactionHistoryRepository transactionHistoryRepository,
+            UserRepository userRepository
+    ) {
         this.transactionHistoryRepository = transactionHistoryRepository;
+        this.userRepository = userRepository;
     }
 
     public User getCurrentUser(Authentication authentication) {
@@ -101,7 +104,7 @@ public class UserService {
         userRepository.deleteByEmail(email);
     }
 
-    public void editUserDatails(UserProfileDTO profileDTO, Authentication authentication) {
+    public void editUserDetails(UserProfileDTO profileDTO, Authentication authentication) {
         User currentUser = getCurrentUser(authentication);
 
         UserDetails details = currentUser.getUserDetails();

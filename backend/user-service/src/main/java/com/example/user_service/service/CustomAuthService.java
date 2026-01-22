@@ -66,7 +66,7 @@ public class CustomAuthService {
 
     public String login(String email, String password) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFound("Email or password is invalid! User not found!"));
+                .orElseThrow(() -> new UserNotFound("Email or password is invalid!"));
 
         if (passwordEncoder.matches(password, user.getPassword())) {
             return generateJwtToken(email);

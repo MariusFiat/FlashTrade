@@ -49,7 +49,7 @@ public class UserController {
     public ResponseEntity<MessageResponse> editUserDetails(
             @RequestBody UserProfileDTO profileDTO,
             Authentication authentication) {
-        userService.editUserDatails(profileDTO, authentication);
+        userService.editUserDetails(profileDTO, authentication);
         return ResponseEntity.ok(new MessageResponse("Profile updated successfully"));
     }
 

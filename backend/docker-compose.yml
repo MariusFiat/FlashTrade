@@ -79,6 +79,27 @@ services:
     networks:
       - flashtrade-network
 
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: ai-service
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_DATASOURCE_URL=${DB_URL}
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - PYTHON_EXECUTABLE=python3
+      - NEWS_API_KEY=${NEWS_API_KEY}
+    depends_on:
+      - rabbitmq
+    restart: unless-stopped
+    networks:
+      - flashtrade-network
+
 networks:
   flashtrade-network:
     driver: bridge
