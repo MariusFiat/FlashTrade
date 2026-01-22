@@ -104,10 +104,21 @@ export function StockChart() {
     )
   }
 
-  const currentPrice = data[data.length - 1].price
-  const previousPrice = data[0].price
+  // Check if we have valid data before rendering the chart
+  if (data.length === 0) {
+    return (
+      <Card className="bg-card border-border/50">
+        <CardContent className="flex flex-col items-center justify-center h-[450px] gap-4">
+          <div className="text-muted-foreground">No chart data available</div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const currentPrice = data[data.length - 1]?.price ?? 0
+  const previousPrice = data[0]?.price ?? 0
   const priceChange = currentPrice - previousPrice
-  const percentChange = ((priceChange / previousPrice) * 100).toFixed(2)
+  const percentChange = previousPrice > 0 ? ((priceChange / previousPrice) * 100).toFixed(2) : '0.00'
   const isPositive = priceChange >= 0
 
   const stockInfo = stockList.find((s) => s.symbol === selectedStock) || { symbol: selectedStock, name: "" }
