@@ -94,12 +94,12 @@ export function PortfolioHoldings() {
                 return (
                   <tr key={holding.id} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
                     <td className="py-4 px-4">
-                      <div className="font-bold">{holding.stock}</div>
+                      <div className="font-bold">{holding.stock || 'N/A'}</div>
                     </td>
-                    <td className="text-right py-4 px-4">{holding.shares.toFixed(2)}</td>
-                    <td className="text-right py-4 px-4 font-bold">${holding.portfolioValue.toFixed(2)}</td>
+                    <td className="text-right py-4 px-4">{holding.shares != null ? holding.shares.toFixed(2) : '0.00'}</td>
+                    <td className="text-right py-4 px-4 font-bold">${holding.portfolioValue != null ? holding.portfolioValue.toFixed(2) : '0.00'}</td>
                     <td className="text-right py-4 px-4">
-                      <Badge variant="secondary">{holding.allocation.toFixed(2)}%</Badge>
+                      <Badge variant="secondary">{holding.allocation != null ? holding.allocation.toFixed(2) : '0.00'}%</Badge>
                     </td>
                     <td className="text-right py-4 px-4">
                       <DropdownMenu>

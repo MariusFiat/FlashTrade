@@ -43,23 +43,27 @@ export function PortfolioOverview() {
     )
   }
 
-  const returnPercent = portfolio.totalInvested > 0 
-    ? ((portfolio.totalReturn / portfolio.totalInvested) * 100).toFixed(2)
+  const totalInvested = portfolio.totalInvested ?? 0
+  const totalReturn = portfolio.totalReturn ?? 0
+  const totalValue = portfolio.totalValue ?? 0
+  
+  const returnPercent = totalInvested > 0 
+    ? ((totalReturn / totalInvested) * 100).toFixed(2)
     : '0.00'
-  const isPositive = portfolio.totalReturn >= 0
+  const isPositive = totalReturn >= 0
 
   const stats = [
     {
       label: "Total Value",
-      value: `$${portfolio.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-      change: `$${portfolio.totalReturn.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      value: `$${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      change: `$${totalReturn.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       changePercent: `${isPositive ? '+' : ''}${returnPercent}%`,
       isPositive: isPositive,
       icon: DollarSign,
     },
     {
       label: "Total Invested",
-      value: `$${portfolio.totalInvested.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      value: `$${totalInvested.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       change: "Initial capital",
       changePercent: "",
       isPositive: null,
@@ -67,7 +71,7 @@ export function PortfolioOverview() {
     },
     {
       label: "Total Return",
-      value: `${isPositive ? '+' : ''}$${Math.abs(portfolio.totalReturn).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      value: `${isPositive ? '+' : ''}$${Math.abs(totalReturn).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       change: "All-time",
       changePercent: `${isPositive ? '+' : ''}${returnPercent}%`,
       isPositive: isPositive,
@@ -75,7 +79,7 @@ export function PortfolioOverview() {
     },
     {
       label: "Holdings",
-      value: `${portfolio.items.length}`,
+      value: `${portfolio.items?.length ?? 0}`,
       change: "Active positions",
       changePercent: "",
       isPositive: null,

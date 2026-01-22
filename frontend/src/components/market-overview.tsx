@@ -44,36 +44,41 @@ export function MarketOverview() {
     return null
   }
 
-  const returnPercent = portfolio.totalInvested > 0 
-    ? ((portfolio.totalReturn / portfolio.totalInvested) * 100).toFixed(1)
+  const totalInvested = portfolio.totalInvested ?? 0
+  const totalReturn = portfolio.totalReturn ?? 0
+  const totalValue = portfolio.totalValue ?? 0
+  const balance = walletInfo.balance ?? 0
+  
+  const returnPercent = totalInvested > 0 
+    ? ((totalReturn / totalInvested) * 100).toFixed(1)
     : '0.0'
-  const isPositive = portfolio.totalReturn >= 0
+  const isPositive = totalReturn >= 0
 
   const stats = [
     {
       label: "Portfolio Value",
-      value: `$${portfolio.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      value: `$${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       change: `${isPositive ? '+' : ''}${returnPercent}%`,
       isPositive: isPositive,
       icon: Wallet,
     },
     {
       label: "Total Profit/Loss",
-      value: `${portfolio.totalReturn >= 0 ? '+' : ''}$${Math.abs(portfolio.totalReturn).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      value: `${totalReturn >= 0 ? '+' : ''}$${Math.abs(totalReturn).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       change: `${isPositive ? '+' : ''}${returnPercent}%`,
       isPositive: isPositive,
       icon: TrendingUp,
     },
     {
       label: "Active Positions",
-      value: `${portfolio.items.length}`,
+      value: `${portfolio.items?.length ?? 0}`,
       change: "Holdings",
       isPositive: null,
       icon: Activity,
     },
     {
       label: "Available Balance",
-      value: `$${walletInfo.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      value: `$${balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       change: "Ready to trade",
       isPositive: null,
       icon: Wallet,

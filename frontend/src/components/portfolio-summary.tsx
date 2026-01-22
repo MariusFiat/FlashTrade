@@ -87,12 +87,12 @@ export function PortfolioSummary() {
                 return (
                   <tr key={holding.id} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
                     <td className="py-3 px-4">
-                      <div className="font-bold text-sm">{holding.stock}</div>
+                      <div className="font-bold text-sm">{holding.stock || 'N/A'}</div>
                     </td>
-                    <td className="text-right py-3 px-4 text-sm">{holding.shares.toFixed(2)}</td>
-                    <td className="text-right py-3 px-4 text-sm font-bold">${holding.portfolioValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td className="text-right py-3 px-4 text-sm">{holding.shares != null ? holding.shares.toFixed(2) : '0.00'}</td>
+                    <td className="text-right py-3 px-4 text-sm font-bold">${holding.portfolioValue != null ? holding.portfolioValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</td>
                     <td className="text-right py-3 px-4 text-sm">
-                      <span className="text-muted-foreground">{holding.allocation.toFixed(1)}%</span>
+                      <span className="text-muted-foreground">{holding.allocation != null ? holding.allocation.toFixed(1) : '0.0'}%</span>
                     </td>
                   </tr>
                 )
