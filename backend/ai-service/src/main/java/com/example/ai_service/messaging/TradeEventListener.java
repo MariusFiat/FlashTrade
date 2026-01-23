@@ -1,7 +1,11 @@
 package com.example.ai_service.messaging;
 
+import com.example.ai_service.dto.TradeEvent;
 import com.example.ai_service.entity.SentimentScore;
 import com.example.ai_service.service.SentimentAnalysisService;
+
+import java.math.BigDecimal;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -18,14 +22,23 @@ public class TradeEventListener {
 
     @RabbitListener(queues = "ai.trade.events.queue")
     public void onTradeExecuted(TradeEvent event) {
-        // When a trade happens, check if sentiment predicted it
-        String symbol = event.getSymbol();
+        try {
+            String symbol = event.getSymbol();
+            log.info("Received trade event for symbol: {}", symbol);
 
-        SentimentScore recentSentiment = sentimentService.getLatestSentiment(symbol);
+            SentimentScore recentSentiment = sentimentService.getLatestSentiment(symbol);
 
-        if (recentSentiment.getClassification().equals("POSITIVE") && event.getPriceChange() > 0) {
-            // Sentiment was correct! Log this for model improvement
-            log.info("Sentiment prediction was accurate for {}", symbol);
+            if (recentSentiment != null && 
+                recentSentiment.getClassification().equals("POSITIVE") && 
+                event.getPriceChange() != null &&
+                event.getPriceChange().compareTo(BigDecimal.ZERO) > 0) {
+                log.info("✓ Sentiment prediction was accurate for {}", symbol);
+            } else if (recentSentiment != null) {
+                log.info("Sentiment for {}: {}, Price change: {}", 
+                    symbol, recentSentiment.getClassification(), event.getPriceChange());
+            }
+        } catch (Exception e) {
+            log.error("Error processing trade event: {}", e.getMessage());
         }
     }
 }

@@ -35,9 +35,13 @@ def predict_next_price(symbol, recent_prices):
     return predicted_price
 
 if __name__ == "__main__":
-    # Called from Java
-    symbol = sys.argv[1]
-    prices = json.loads(sys.argv[2])
-
-    prediction = predict_next_price(symbol, prices)
-    print(prediction)  # Java reads this
+    try:
+        symbol = sys.argv[1]
+        prices_json = sys.argv[2]
+        prices = json.loads(prices_json)
+        
+        prediction = predict_next_price(symbol, prices)
+        print(prediction)
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        print(100.0)  # Default fallback

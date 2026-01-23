@@ -31,8 +31,10 @@ def analyze_sentiment(text):
     return score
 
 if __name__ == "__main__":
-    # Called from Java
-    text = sys.argv[1]
-
-    sentiment_score = analyze_sentiment(text)
-    print(sentiment_score)  # Java reads this
+    try:
+        text = sys.argv[1] if len(sys.argv) > 1 else ""
+        sentiment_score = analyze_sentiment(text)
+        print(sentiment_score)
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        print(0.0)
