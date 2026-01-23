@@ -2,6 +2,7 @@ package com.example.ai_service.service;
 
 import com.example.ai_service.dto.PredictionResponse;
 import com.example.ai_service.entity.StockPrediction;
+import com.example.ai_service.exception.DataFetchException;
 import com.example.ai_service.exception.PredictionFailedException;
 import com.example.ai_service.repository.PredictionRepository;
 import com.google.gson.Gson;
@@ -42,6 +43,12 @@ public class PricePredictionService {
             // STEP 1: Get historical price data
             List<Double> historicalPrices = dataFetchService.getHistoricalPrices(symbol, 60);
             
+            if (historicalPrices.isEmpty()) {
+                throw new DataFetchException("No historical data available for " + symbol);
+            }
+
+            double currentPrice = historicalPrices.get(historicalPrices.size() - 1);
+
             // STEP 2: Call Python ML model
             double predictedPrice = callPythonModel(symbol, historicalPrices);
             
@@ -52,6 +59,7 @@ public class PricePredictionService {
             StockPrediction entity = new StockPrediction();
             entity.setSymbol(symbol);
             entity.setPredictedPrice(predictedPrice);
+            entity.setCurrentPrice(currentPrice);
             entity.setConfidence(confidence);
             entity.setCreatedAt(Instant.now());
             predictionRepository.save(entity);
@@ -60,6 +68,7 @@ public class PricePredictionService {
             return PredictionResponse.builder()
                 .symbol(symbol)
                 .predictedPrice(predictedPrice)
+                .currentPrice(currentPrice)
                 .confidence(confidence)
                 .timeframe("1D")
                 .timestamp(Instant.now().toEpochMilli())

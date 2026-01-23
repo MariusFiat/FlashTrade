@@ -21,6 +21,9 @@ public class StockPrediction {
     private Double predictedPrice;
 
     @Column(nullable = false)
+    private Double currentPrice;
+
+    @Column(nullable = false)
     private Double confidence;  // 0.0 to 1.0
 
     @Column(nullable = false)

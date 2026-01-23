@@ -81,8 +81,7 @@ public class SentimentAnalysisService {
     }
     
     public List<SentimentScore> getSentimentHistory(String symbol, int days) {
-        Instant cutoff = Instant.now().minus(days, ChronoUnit.DAYS);
-        return sentimentRepository.findBySymbolAndCreatedAtAfter(symbol, cutoff);
+        return sentimentRepository.findTop10BySymbolOrderByCreatedAtDesc(symbol);
     }
     
     private double analyzeArticle(String text) {

@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 public class PredictionResponse {
     private String symbol;
     private Double predictedPrice;
+    private Double currentPrice;
     private Double confidence;
     private String timeframe;
     private Long timestamp;
