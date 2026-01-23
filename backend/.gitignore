@@ -2,6 +2,7 @@
 .env
 .env.local
 .env.*.local
+.vscode
 
 # Local development properties
 **/application-local.properties
