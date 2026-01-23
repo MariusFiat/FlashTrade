@@ -63,11 +63,30 @@ export function StockChart() {
         const range = rangeMap[selectedTimeframe] || '1d'
         const response = await stockApi.getStockPerformance(selectedStock, range)
         
-        // Transform backend data to chart format
-        const chartData = response.history.map((point: StockHistoryPoint) => ({
-          time: new Date(point.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-          price: point.price
-        }))
+        // Transform backend data to chart format with timeframe-appropriate formatting
+        const chartData = response.history.map((point: StockHistoryPoint) => {
+          const date = new Date(point.timestamp)
+          let formattedTime: string
+          
+          if (selectedTimeframe === '1D') {
+            // For 1D: show time (e.g., "2:30 PM")
+            formattedTime = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+          } else if (selectedTimeframe === '1W') {
+            // For 1W: show day of week (e.g., "Mon", "Tue")
+            formattedTime = date.toLocaleDateString('en-US', { weekday: 'short' })
+          } else if (selectedTimeframe === '1M') {
+            // For 1M: show month and day (e.g., "Jan 15")
+            formattedTime = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          } else {
+            // For 3M, 1Y, ALL: show month and day (e.g., "Jan 15")
+            formattedTime = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          }
+          
+          return {
+            time: formattedTime,
+            price: point.price
+          }
+        })
         
         setData(chartData)
       } catch (error) {
