@@ -3,10 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { X, Loader2 } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { orderApi } from "@/services/orderApi"
 import { useAuth } from "@/hooks/useAuth"
 import { useToast } from "@/hooks/use-toast"
+import { useWebSocket } from "@/hooks/useWebSocket"
+import { TransactionUpdate, OrderStatusUpdate } from "@/services/websocket"
 import type { ActiveOrder } from "@/types/order"
 
 export function ActiveOrders() {
@@ -15,6 +17,79 @@ export function ActiveOrders() {
   const [cancellingOrderId, setCancellingOrderId] = useState<number | null>(null)
   const { user } = useAuth()
   const { toast } = useToast()
+
+  const handleTransactionUpdate = useCallback((update: TransactionUpdate) => {
+    console.log('Active orders received transaction update:', update);
+    // Only refresh if the update is for the current user
+    if (user && update.userId === user.email) {
+      console.log('Refreshing active orders for user:', user.email);
+      fetchOrders();
+    }
+  }, [user]);
+
+  const handleOrderStatusUpdate = useCallback((update: OrderStatusUpdate) => {
+    console.log('Order status update received:', update);
+    
+    const isCancelled = update.status === 'CANCELED' || update.status === 'CANCELLED';
+    const isFailed = update.status === 'FAILED';
+    
+    // Show toast notification for status changes
+    if (update.status === 'SUCCESS' || update.status === 'OPEN') {
+      toast({
+        title: "Order Active",
+        description: `${update.orderType} order for ${update.quantity} ${update.symbol} is now ${update.status.toLowerCase()}`,
+      });
+    } else if (isCancelled) {
+      toast({
+        title: "Order Cancelled",
+        description: `Order #${update.orderId} has been cancelled`,
+        variant: "destructive",
+      });
+    } else if (isFailed) {
+      toast({
+        title: "Order Failed",
+        description: update.errorMessage || `Order #${update.orderId} failed`,
+        variant: "destructive",
+      });
+    }
+    
+    // Update the order in the list immediately
+    setOrders(prevOrders => {
+      // If cancelled or failed, remove from list
+      if (isCancelled || isFailed) {
+        console.log(`Removing order ${update.orderId} (status: ${update.status})`);
+        return prevOrders.filter(o => o.orderId !== update.orderId);
+      }
+      
+      const orderIndex = prevOrders.findIndex(o => o.orderId === update.orderId);
+      
+      if (orderIndex !== -1) {
+        // Update existing order
+        const updatedOrders = [...prevOrders];
+        updatedOrders[orderIndex] = {
+          ...updatedOrders[orderIndex],
+          status: update.status,
+        };
+        console.log(`Updated order ${update.orderId} status to ${update.status}`);
+        return updatedOrders;
+      } else {
+        // Add new order if it's not already in the list
+        console.log(`Adding new order ${update.orderId}`);
+        const newOrder: ActiveOrder = {
+          orderId: update.orderId,
+          symbol: update.symbol,
+          side: (update.orderType === 'BUY' || update.orderType === 'SELL') ? update.orderType : 'BUY',
+          originalQty: update.quantity,
+          price: update.price,
+          status: update.status,
+          createdAt: update.createdAt,
+        };
+        return [newOrder, ...prevOrders];
+      }
+    });
+  }, [toast]);
+
+  useWebSocket(handleTransactionUpdate, user?.email, handleOrderStatusUpdate);
 
   const fetchOrders = async () => {
     if (!user) return

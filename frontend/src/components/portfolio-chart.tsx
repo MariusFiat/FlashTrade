@@ -2,9 +2,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { userApi } from "@/services/userApi"
 import { Loader2 } from "lucide-react"
+import { useWebSocket } from "@/hooks/useWebSocket"
+import { TransactionUpdate } from "@/services/websocket"
 
 const timeframes = ["1W", "1M", "3M", "6M", "1Y", "ALL"]
 
@@ -13,6 +15,27 @@ export function PortfolioChart() {
   const [data, setData] = useState<Array<{ date: string; value: number }>>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const handleTransactionUpdate = useCallback((update: TransactionUpdate) => {
+    console.log('Transaction update received in portfolio chart:', update);
+    // Update the latest data point with the transaction impact
+    setData(prev => {
+      if (prev.length === 0) return prev;
+      const newData = [...prev];
+      const lastPoint = newData[newData.length - 1];
+      // Calculate impact: for buy orders add, for sell orders depends on profit/loss
+      const impact = update.side.toLowerCase() === 'buy' 
+        ? -(update.quantity * update.price) // Buying decreases cash
+        : (update.quantity * update.price); // Selling increases cash
+      newData[newData.length - 1] = {
+        ...lastPoint,
+        value: lastPoint.value + impact
+      };
+      return newData;
+    });
+  }, []);
+
+  useWebSocket(handleTransactionUpdate);
 
   useEffect(() => {
     fetchPerformance()
