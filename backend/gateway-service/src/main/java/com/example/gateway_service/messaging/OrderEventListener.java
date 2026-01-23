@@ -1,5 +1,7 @@
 package com.example.gateway_service.messaging;
 
+import java.time.LocalDateTime;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -7,14 +9,17 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
 import com.example.gateway_service.messaging.dto.OrderCreatedEvent;
+import com.example.gateway_service.messaging.dto.TransactionUpdate;
 
 @Component
 public class OrderEventListener {
     private static final Logger log = LoggerFactory.getLogger(OrderEventListener.class);
     
     private final SimpMessagingTemplate messagingTemplate;
-
-    public OrderEventListener(SimpMessagingTemplate messagingTemplate) {
+    private final WebSocketNotificationService notificationService;
+    
+    public OrderEventListener(WebSocketNotificationService notificationService, SimpMessagingTemplate messagingTemplate) {
+        this.notificationService = notificationService;
         this.messagingTemplate = messagingTemplate;
     }
     
@@ -35,6 +40,18 @@ public class OrderEventListener {
         if ("SUCCESS".equals(event.getStatus())) {
             log.info("Order created successfully: orderId={}, symbol={}, quantity={}",
                     event.getOrderId(), event.getSymbol(), event.getQuantity());
+            
+            TransactionUpdate update = new TransactionUpdate(
+                event.getOrderId().toString(),
+                event.getUserId(),
+                event.getSymbol(),
+                event.getOrderType(),
+                (double) event.getQuantity(),
+                event.getPrice(),
+                "SUCCESS",
+                LocalDateTime.now()
+            );
+            notificationService.broadcastTransactionUpdate(update);
         } else if ("FAILED".equals(event.getStatus())) {
             log.error("Order creation failed: correlationId={}, error={}",
                     event.getCorrelationId(), event.getErrorMessage());

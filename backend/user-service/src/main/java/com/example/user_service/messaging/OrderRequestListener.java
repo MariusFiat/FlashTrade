@@ -89,14 +89,17 @@ public class OrderRequestListener {
                 .filter(p -> p.getStock().equalsIgnoreCase(message.getSymbol()))
                 .findFirst();
 
+        double pricePerShare = message.getAmountSpent() / message.getQuantity();
+
         if (existing.isPresent()) {
             Portfolio p = existing.get();
             p.setShares(p.getShares() + message.getQuantity());
+            p.setPortfolioValue(p.getShares() * pricePerShare);
         } else {
             Portfolio newItem = new Portfolio();
             newItem.setStock(message.getSymbol());
             newItem.setShares(message.getQuantity());
-            newItem.setPortfolioValue(message.getAmountSpent() / message.getQuantity());
+            newItem.setPortfolioValue(message.getQuantity() * pricePerShare);
             newItem.setUserDetails(details);
             details.getPortfolioItems().add(newItem);
         }
