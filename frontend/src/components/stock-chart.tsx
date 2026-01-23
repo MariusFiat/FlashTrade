@@ -10,72 +10,13 @@ import { cn } from "@/lib/utils"
 
 const timeframes = ["1D", "1W", "1M", "3M", "1Y", "ALL"]
 
+import { stockApi } from "@/services/stockApi"
+import { useToast } from "@/hooks/use-toast"
+import type { StockHistoryPoint } from "@/types/stock"
+
 const fetchStocksFromBackend = async (): Promise<Array<{ symbol: string; name: string }>> => {
-  // Simulating API call delay
-  await new Promise((resolve) => setTimeout(resolve, 100))
-  return [
-    { symbol: "AAPL", name: "Apple Inc." },
-    { symbol: "TSLA", name: "Tesla Inc." },
-    { symbol: "GOOGL", name: "Alphabet Inc." },
-    { symbol: "MSFT", name: "Microsoft Corp." },
-    { symbol: "NVDA", name: "NVIDIA Corp." },
-    { symbol: "AMZN", name: "Amazon.com Inc." },
-    { symbol: "META", name: "Meta Platforms Inc." },
-    { symbol: "NFLX", name: "Netflix Inc." },
-    { symbol: "AMD", name: "Advanced Micro Devices" },
-    { symbol: "INTC", name: "Intel Corporation" },
-  ]
-}
-
-const generateMockData = (symbol: string, timeframe: string) => {
-  const basePrice: Record<string, number> = {
-    AAPL: 150,
-    TSLA: 240,
-    GOOGL: 140,
-    MSFT: 390,
-    NVDA: 480,
-    AMZN: 180,
-    META: 500,
-    NFLX: 620,
-    AMD: 160,
-    INTC: 45,
-  }
-
-  const base = basePrice[symbol] || 100
-  const volatility = base * 0.02
-
-  const dataPoints: Record<string, { labels: string[]; count: number }> = {
-    "1D": {
-      labels: [
-        "09:30",
-        "10:00",
-        "10:30",
-        "11:00",
-        "11:30",
-        "12:00",
-        "12:30",
-        "13:00",
-        "13:30",
-        "14:00",
-        "14:30",
-        "15:00",
-      ],
-      count: 12,
-    },
-    "1W": { labels: ["Mon", "Tue", "Wed", "Thu", "Fri"], count: 5 },
-    "1M": { labels: ["W1", "W2", "W3", "W4"], count: 4 },
-    "3M": { labels: ["Jan", "Feb", "Mar"], count: 3 },
-    "1Y": { labels: ["Jan", "Mar", "May", "Jul", "Sep", "Nov"], count: 6 },
-    ALL: { labels: ["2020", "2021", "2022", "2023", "2024"], count: 5 },
-  }
-
-  const config = dataPoints[timeframe] || dataPoints["1D"]
-  let currentPrice = base - volatility * 2
-
-  return config.labels.map((time) => {
-    currentPrice = currentPrice + (Math.random() - 0.4) * volatility
-    return { time, price: Number(currentPrice.toFixed(2)) }
-  })
+  const response = await stockApi.getAllStocks()
+  return response.stocks.map(stock => ({ symbol: stock.symbol, name: stock.name }))
 }
 
 export function StockChart() {
@@ -85,22 +26,83 @@ export function StockChart() {
   const [stockList, setStockList] = useState<Array<{ symbol: string; name: string }>>([])
   const [data, setData] = useState<Array<{ time: string; price: number }>>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const { toast } = useToast()
 
   useEffect(() => {
     const loadStocks = async () => {
-      const stocks = await fetchStocksFromBackend()
-      setStockList(stocks)
-      setLoading(false)
+      try {
+        const stocks = await fetchStocksFromBackend()
+        setStockList(stocks)
+      } catch (error) {
+        setError('Failed to load stock list')
+        toast({
+          title: "Error",
+          description: "Failed to load available stocks",
+          variant: "destructive",
+        })
+      } finally {
+        setLoading(false)
+      }
     }
     loadStocks()
   }, [])
 
   useEffect(() => {
-    const newData = generateMockData(selectedStock, selectedTimeframe)
-    setData(newData)
+    const fetchPerformance = async () => {
+      setError(null)
+      try {
+        const rangeMap: Record<string, string> = {
+          '1D': '1d',
+          '1W': '1w',
+          '1M': '1m',
+          '3M': '3m',
+          '1Y': '1y',
+          'ALL': 'all'
+        }
+        const range = rangeMap[selectedTimeframe] || '1d'
+        const response = await stockApi.getStockPerformance(selectedStock, range)
+        
+        // Transform backend data to chart format with timeframe-appropriate formatting
+        const chartData = response.history.map((point: StockHistoryPoint) => {
+          const date = new Date(point.timestamp)
+          let formattedTime: string
+          
+          if (selectedTimeframe === '1D') {
+            // For 1D: show time (e.g., "2:30 PM")
+            formattedTime = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+          } else if (selectedTimeframe === '1W') {
+            // For 1W: show day of week (e.g., "Mon", "Tue")
+            formattedTime = date.toLocaleDateString('en-US', { weekday: 'short' })
+          } else if (selectedTimeframe === '1M') {
+            // For 1M: show month and day (e.g., "Jan 15")
+            formattedTime = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          } else {
+            // For 3M, 1Y, ALL: show month and day (e.g., "Jan 15")
+            formattedTime = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          }
+          
+          return {
+            time: formattedTime,
+            price: point.price
+          }
+        })
+        
+        setData(chartData)
+      } catch (error) {
+        setError(error instanceof Error ? error.message : 'Failed to load stock performance')
+        setData([])
+        toast({
+          title: "Error",
+          description: "Could not fetch stock performance data",
+          variant: "destructive",
+        })
+      }
+    }
+    fetchPerformance()
   }, [selectedStock, selectedTimeframe])
 
-  if (loading || data.length === 0) {
+  if (loading) {
     return (
       <Card className="bg-card border-border/50">
         <CardContent className="flex items-center justify-center h-[450px]">
@@ -110,10 +112,32 @@ export function StockChart() {
     )
   }
 
-  const currentPrice = data[data.length - 1].price
-  const previousPrice = data[0].price
+  if (error || stockList.length === 0) {
+    return (
+      <Card className="bg-card border-border/50">
+        <CardContent className="flex flex-col items-center justify-center h-[450px] gap-4">
+          <div className="text-destructive font-medium">Unable to load stock data</div>
+          <div className="text-sm text-muted-foreground">{error || 'No stocks available'}</div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // Check if we have valid data before rendering the chart
+  if (data.length === 0) {
+    return (
+      <Card className="bg-card border-border/50">
+        <CardContent className="flex flex-col items-center justify-center h-[450px] gap-4">
+          <div className="text-muted-foreground">No chart data available</div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const currentPrice = data[data.length - 1]?.price ?? 0
+  const previousPrice = data[0]?.price ?? 0
   const priceChange = currentPrice - previousPrice
-  const percentChange = ((priceChange / previousPrice) * 100).toFixed(2)
+  const percentChange = previousPrice > 0 ? ((priceChange / previousPrice) * 100).toFixed(2) : '0.00'
   const isPositive = priceChange >= 0
 
   const stockInfo = stockList.find((s) => s.symbol === selectedStock) || { symbol: selectedStock, name: "" }

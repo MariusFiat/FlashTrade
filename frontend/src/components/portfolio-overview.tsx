@@ -1,20 +1,69 @@
 
 import { Card, CardContent } from "@/components/ui/card"
-import { TrendingUp, TrendingDown, DollarSign, Percent } from "lucide-react"
+import { TrendingUp, TrendingDown, DollarSign, Percent, Loader2 } from "lucide-react"
+import { useState, useEffect } from "react"
+import { userApi } from "@/services/userApi"
+import type { PortfolioSummary } from "@/types/user"
 
 export function PortfolioOverview() {
+  const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetchPortfolio()
+  }, [])
+
+  const fetchPortfolio = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      const data = await userApi.getPortfolio()
+      setPortfolio(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load portfolio')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (error || !portfolio) {
+    return (
+      <div className="text-center py-12 text-muted-foreground">
+        {error || 'No portfolio data available'}
+      </div>
+    )
+  }
+
+  const totalInvested = portfolio.totalInvested ?? 0
+  const totalReturn = portfolio.totalReturn ?? 0
+  const totalValue = portfolio.totalValue ?? 0
+  
+  const returnPercent = totalInvested > 0 
+    ? ((totalReturn / totalInvested) * 100).toFixed(2)
+    : '0.00'
+  const isPositive = totalReturn >= 0
+
   const stats = [
     {
       label: "Total Value",
-      value: "$124,563.89",
-      change: "+$8,234.12",
-      changePercent: "+7.08%",
-      isPositive: true,
+      value: `$${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      change: `$${totalReturn.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      changePercent: `${isPositive ? '+' : ''}${returnPercent}%`,
+      isPositive: isPositive,
       icon: DollarSign,
     },
     {
       label: "Total Invested",
-      value: "$116,329.77",
+      value: `$${totalInvested.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       change: "Initial capital",
       changePercent: "",
       isPositive: null,
@@ -22,18 +71,18 @@ export function PortfolioOverview() {
     },
     {
       label: "Total Return",
-      value: "+$8,234.12",
+      value: `${isPositive ? '+' : ''}$${Math.abs(totalReturn).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       change: "All-time",
-      changePercent: "+7.08%",
-      isPositive: true,
+      changePercent: `${isPositive ? '+' : ''}${returnPercent}%`,
+      isPositive: isPositive,
       icon: TrendingUp,
     },
     {
-      label: "Today's Change",
-      value: "+$1,523.45",
-      change: "Last 24h",
-      changePercent: "+1.24%",
-      isPositive: true,
+      label: "Holdings",
+      value: `${portfolio.items?.length ?? 0}`,
+      change: "Active positions",
+      changePercent: "",
+      isPositive: null,
       icon: Percent,
     },
   ]

@@ -11,7 +11,8 @@ public class OrderResponse {
     private int quantity;
     private BigDecimal price;
     private Instant createdAt;
-    private final OrderSide orderSide;
+    private OrderSide orderSide;
+    private String userId;
 
     public OrderResponse(Long id, String symbol, int quantity, BigDecimal price, Instant createdAt, OrderSide orderSide) {
         this.id = id;
@@ -20,6 +21,16 @@ public class OrderResponse {
         this.price = price;
         this.createdAt = createdAt;
         this.orderSide = orderSide;
+    }
+
+    public OrderResponse(Long id, String symbol, int quantity, BigDecimal price, Instant createdAt, OrderSide orderSide, String userId) {
+        this.id = id;
+        this.symbol = symbol;
+        this.quantity = quantity;
+        this.price = price;
+        this.createdAt = createdAt;
+        this.orderSide = orderSide;
+        this.userId = userId;
     }
 
     public Long getId() {
@@ -65,5 +76,13 @@ public class OrderResponse {
 
     public OrderSide getOrderSide() {
         return orderSide;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
     }
 }

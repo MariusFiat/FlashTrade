@@ -3,114 +3,69 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Calendar, Download, Search } from "lucide-react"
-import { useState } from "react"
-
-const trades = [
-  {
-    id: 1,
-    date: "2024-11-28",
-    time: "14:32",
-    stock: "AAPL",
-    type: "Buy",
-    quantity: 10,
-    price: 150.25,
-    total: 1502.5,
-    status: "Completed",
-    profit: null,
-  },
-  {
-    id: 2,
-    date: "2024-11-28",
-    time: "11:15",
-    stock: "TSLA",
-    type: "Sell",
-    quantity: 5,
-    price: 245.8,
-    total: 1229.0,
-    status: "Completed",
-    profit: 234.5,
-  },
-  {
-    id: 3,
-    date: "2024-11-27",
-    time: "16:45",
-    stock: "GOOGL",
-    type: "Buy",
-    quantity: 8,
-    price: 142.5,
-    total: 1140.0,
-    status: "Completed",
-    profit: null,
-  },
-  {
-    id: 4,
-    date: "2024-11-27",
-    time: "09:22",
-    stock: "MSFT",
-    type: "Buy",
-    quantity: 6,
-    price: 388.75,
-    total: 2332.5,
-    status: "Completed",
-    profit: null,
-  },
-  {
-    id: 5,
-    date: "2024-11-26",
-    time: "13:30",
-    stock: "NVDA",
-    type: "Sell",
-    quantity: 3,
-    price: 485.2,
-    total: 1455.6,
-    status: "Completed",
-    profit: 156.9,
-  },
-  {
-    id: 6,
-    date: "2024-11-26",
-    time: "10:15",
-    stock: "AMZN",
-    type: "Buy",
-    quantity: 10,
-    price: 165.8,
-    total: 1658.0,
-    status: "Completed",
-    profit: null,
-  },
-  {
-    id: 7,
-    date: "2024-11-25",
-    time: "15:20",
-    stock: "META",
-    type: "Buy",
-    quantity: 12,
-    price: 325.5,
-    total: 3906.0,
-    status: "Completed",
-    profit: null,
-  },
-  {
-    id: 8,
-    date: "2024-11-25",
-    time: "11:05",
-    stock: "AAPL",
-    type: "Sell",
-    quantity: 15,
-    price: 148.9,
-    total: 2233.5,
-    status: "Completed",
-    profit: -89.25,
-  },
-]
+import { Calendar, Download, Search, Loader2 } from "lucide-react"
+import { useState, useEffect } from "react"
+import { stockApi } from "@/services/stockApi"
+import { useAuth } from "@/hooks/useAuth"
+import { useToast } from "@/hooks/use-toast"
+import type { TradeRecord } from "@/types/stock"
 
 export function TradeHistory() {
   const [searchTerm, setSearchTerm] = useState("")
+  const [trades, setTrades] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const { user } = useAuth()
+  const { toast } = useToast()
+
+  useEffect(() => {
+    const fetchTrades = async () => {
+      if (!user) return
+      
+      try {
+        const response = await stockApi.getTradeHistory(user.email)
+        // Transform backend data to component format
+        const transformedTrades = response.trades.map((trade: TradeRecord, index: number) => ({
+          id: trade.tradeId,
+          date: new Date(trade.timestamp).toLocaleDateString(),
+          time: new Date(trade.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+          stock: trade.symbol,
+          type: trade.side === 'BUY' ? 'Buy' : 'Sell',
+          quantity: trade.quantity,
+          price: Number(trade.price),
+          total: trade.quantity * Number(trade.price),
+          status: "Completed",
+          profit: null // P/L calculation would need additional data
+        }))
+        setTrades(transformedTrades)
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to fetch trade history",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchTrades()
+  }, [user])
 
   const filteredTrades = trades.filter((trade) => trade.stock.toLowerCase().includes(searchTerm.toLowerCase()))
 
   const totalProfit = trades.reduce((sum, trade) => sum + (trade.profit || 0), 0)
+
+  if (isLoading) {
+    return (
+      <Card className="bg-card border-border/50">
+        <CardHeader>
+          <CardTitle>Trading History</CardTitle>
+        </CardHeader>
+        <CardContent className="flex justify-center items-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card className="bg-card border-border/50">

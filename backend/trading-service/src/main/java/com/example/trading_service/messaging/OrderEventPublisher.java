@@ -26,7 +26,7 @@ public class OrderEventPublisher {
                 order.getQuantity(),
                 order.getPrice(),
                 order.getOrderSide(),
-                null,  // userId can be added later
+                order.getUserId(),
                 order.getCreatedAt(),
                 correlationId,
                 status,
@@ -40,6 +40,30 @@ public class OrderEventPublisher {
         );
         
         log.info("Published order created event: orderId={}, status={}", order.getId(), status);
+    }
+
+    // Overload for Maker updates where we might want to pass userId explicitly if OrderResponse doesn't have it
+    public void publishOrderUpdate(OrderResponse order, String userId, String correlationId, String status) {
+        OrderCreatedEvent event = new OrderCreatedEvent(
+                order.getId(),
+                order.getSymbol(),
+                order.getQuantity(),
+                order.getPrice(),
+                order.getOrderSide(),
+                userId,
+                order.getCreatedAt(),
+                correlationId,
+                status,
+                null
+        );
+
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.TRADING_EVENTS_EXCHANGE,
+                RabbitMQConfig.ORDER_CREATED_KEY, // Reuse created key or use update key
+                event
+        );
+
+        log.info("Published maker order update event: orderId={}, userId={}, status={}", order.getId(), userId, status);
     }
     
     public void publishOrderFailed(String correlationId, String errorMessage) {
@@ -55,5 +79,21 @@ public class OrderEventPublisher {
         );
         
         log.info("Published order failed event: correlationId={}, error={}", correlationId, errorMessage);
+    }
+
+    public void publishOrderCanceled(String correlationId, Long orderId, String userId) {
+        OrderCreatedEvent event = new OrderCreatedEvent();
+        event.setOrderId(orderId);
+        event.setUserId(userId);
+        event.setCorrelationId(correlationId);
+        event.setStatus("CANCELED");
+
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.TRADING_EVENTS_EXCHANGE,
+                RabbitMQConfig.ORDER_UPDATE_KEY,
+                event
+        );
+
+        log.info("Published order canceled event: orderId={}, userId={}, correlationId={}", orderId, userId, correlationId);
     }
 }

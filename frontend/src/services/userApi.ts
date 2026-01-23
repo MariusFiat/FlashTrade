@@ -1,5 +1,13 @@
 import { getCookie, deleteCookie } from '@/lib/cookies';
-import type { UserProfile, UpdateProfileRequest, MessageResponse, WalletInfo, TransactionHistory } from '@/types/user';
+import type { 
+  UserProfile, 
+  UpdateProfileRequest, 
+  MessageResponse, 
+  WalletInfo, 
+  TransactionHistory,
+  PortfolioSummary,
+  PortfolioPerformance
+} from '@/types/user';
 
 const API_BASE_URL = import.meta.env.VITE_USER_SERVICE_URL || 'http://localhost:8082';
 const TOKEN_COOKIE_NAME = 'access_token';
@@ -107,6 +115,34 @@ class UserApiService {
     if (!response.ok) {
       this.handleUnauthorized(response);
       throw new Error('Failed to fetch transactions');
+    }
+
+    return response.json();
+  }
+
+  async getPortfolio(): Promise<PortfolioSummary> {
+    const response = await fetch(`${this.baseURL}/user_info/get_portfolio`, {
+      headers: this.getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      this.handleUnauthorized(response);
+      throw new Error('Failed to fetch portfolio');
+    }
+
+    const data = await response.json();
+    console.log('Portfolio API Response:', data);
+    return data;
+  }
+
+  async getPortfolioPerformance(range: string = '1w'): Promise<PortfolioPerformance> {
+    const response = await fetch(`${this.baseURL}/user_info/get_portfolio_performance?range=${range}`, {
+      headers: this.getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      this.handleUnauthorized(response);
+      throw new Error('Failed to fetch portfolio performance');
     }
 
     return response.json();

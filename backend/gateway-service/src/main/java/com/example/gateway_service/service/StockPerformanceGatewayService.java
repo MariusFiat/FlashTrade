@@ -1,15 +1,16 @@
 package com.example.gateway_service.service;
 
-import com.example.gateway_service.messaging.dto.StockPerformanceRequest;
-import com.example.gateway_service.messaging.dto.StockPerformanceResponse;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.stereotype.Service;
-
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.stereotype.Service;
+
+import com.example.gateway_service.messaging.dto.StockPerformanceRequest;
+import com.example.gateway_service.messaging.dto.StockPerformanceResponse;
 
 @Service
 public class StockPerformanceGatewayService {
@@ -30,7 +31,7 @@ public class StockPerformanceGatewayService {
 
         rabbitTemplate.convertAndSend("trading_data_exchange", "stock.performance.request", request);
 
-        return future.orTimeout(10, TimeUnit.SECONDS)
+        return future.orTimeout(30, TimeUnit.SECONDS)
                 .whenComplete((res, ex) -> pendingRequests.remove(correlationId));
     }
 

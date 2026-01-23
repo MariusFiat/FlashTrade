@@ -2,7 +2,6 @@ package com.example.user_service.controller;
 
 import java.util.List;
 
-import com.example.user_service.dto.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -15,6 +14,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.user_service.dto.PortfolioPerformanceDTO;
+import com.example.user_service.dto.PortfolioSummaryDTO;
+import com.example.user_service.dto.TransactionHistoryDTO;
+import com.example.user_service.dto.UserProfileDTO;
+import com.example.user_service.dto.WalletDTO;
 import com.example.user_service.messaging.dto.MessageResponse;
 import com.example.user_service.service.UserService;
 
