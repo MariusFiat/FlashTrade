@@ -1,16 +1,71 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { TrendingUp, TrendingDown } from "lucide-react"
-
-const holdings = [
-  { stock: "AAPL", name: "Apple Inc.", shares: 50, avgPrice: 145.3, currentPrice: 151.89, value: 7594.5 },
-  { stock: "TSLA", name: "Tesla Inc.", shares: 25, avgPrice: 235.2, currentPrice: 245.8, value: 6145.0 },
-  { stock: "GOOGL", name: "Alphabet Inc.", shares: 40, avgPrice: 135.8, currentPrice: 142.5, value: 5700.0 },
-  { stock: "MSFT", name: "Microsoft Corp.", shares: 30, avgPrice: 380.5, currentPrice: 395.2, value: 11856.0 },
-  { stock: "NVDA", name: "NVIDIA Corp.", shares: 15, avgPrice: 450.0, currentPrice: 489.3, value: 7339.5 },
-]
+import { Loader2 } from "lucide-react"
+import { useState, useEffect } from "react"
+import { userApi } from "@/services/userApi"
+import type { PortfolioSummary as PortfolioSummaryType } from "@/types/user"
 
 export function PortfolioSummary() {
+  const [portfolio, setPortfolio] = useState<PortfolioSummaryType | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetchPortfolio()
+  }, [])
+
+  const fetchPortfolio = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      const data = await userApi.getPortfolio()
+      setPortfolio(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load portfolio')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <Card className="bg-card border-border/50">
+        <CardHeader>
+          <CardTitle>Portfolio Holdings</CardTitle>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (error || !portfolio) {
+    return (
+      <Card className="bg-card border-border/50">
+        <CardHeader>
+          <CardTitle>Portfolio Holdings</CardTitle>
+        </CardHeader>
+        <CardContent className="text-center py-12 text-muted-foreground">
+          {error || 'No portfolio data available'}
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (portfolio.items.length === 0) {
+    return (
+      <Card className="bg-card border-border/50">
+        <CardHeader>
+          <CardTitle>Portfolio Holdings</CardTitle>
+        </CardHeader>
+        <CardContent className="text-center py-12 text-muted-foreground">
+          No holdings yet. Start trading to build your portfolio!
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card className="bg-card border-border/50">
       <CardHeader>
@@ -23,44 +78,22 @@ export function PortfolioSummary() {
               <tr className="border-b border-border">
                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Stock</th>
                 <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Shares</th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Avg</th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Current</th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">P/L</th>
                 <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Value</th>
+                <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Allocation</th>
               </tr>
             </thead>
             <tbody>
-              {holdings.map((holding, index) => {
-                const profitLoss = (holding.currentPrice - holding.avgPrice) * holding.shares
-                const profitLossPercent = (
-                  ((holding.currentPrice - holding.avgPrice) / holding.avgPrice) *
-                  100
-                ).toFixed(2)
-                const isProfit = profitLoss >= 0
-
+              {portfolio.items.map((holding) => {
                 return (
-                  <tr key={index} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
+                  <tr key={holding.id} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
                     <td className="py-3 px-4">
-                      <div>
-                        <div className="font-bold text-sm">{holding.stock}</div>
-                        <div className="text-xs text-muted-foreground truncate max-w-[100px]">{holding.name}</div>
-                      </div>
+                      <div className="font-bold text-sm">{holding.stock || 'N/A'}</div>
                     </td>
-                    <td className="text-right py-3 px-4 text-sm">{holding.shares}</td>
-                    <td className="text-right py-3 px-4 text-sm">${holding.avgPrice.toFixed(0)}</td>
-                    <td className="text-right py-3 px-4 text-sm font-medium">${holding.currentPrice.toFixed(0)}</td>
-                    <td className="text-right py-3 px-4">
-                      <div className="flex flex-col items-end">
-                        <span
-                          className={`text-sm font-medium flex items-center gap-1 ${isProfit ? "text-green-500" : "text-red-500"}`}
-                        >
-                          {isProfit ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                          {isProfit ? "+" : ""}
-                          {profitLossPercent}%
-                        </span>
-                      </div>
+                    <td className="text-right py-3 px-4 text-sm">{holding.shares != null ? holding.shares.toFixed(2) : '0.00'}</td>
+                    <td className="text-right py-3 px-4 text-sm font-bold">${holding.portfolioValue != null ? holding.portfolioValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</td>
+                    <td className="text-right py-3 px-4 text-sm">
+                      <span className="text-muted-foreground">{holding.allocation != null ? holding.allocation.toFixed(1) : '0.0'}%</span>
                     </td>
-                    <td className="text-right py-3 px-4 text-sm font-bold">${holding.value.toLocaleString()}</td>
                   </tr>
                 )
               })}

@@ -40,3 +40,28 @@ export interface DepositRequest {
 export interface WithdrawalRequest {
   amount: number;
 }
+
+export interface PortfolioItem {
+  id: number;
+  stock: string;
+  shares: number;
+  portfolioValue: number;
+  allocation: number;
+}
+
+export interface PortfolioSummary {
+  items: PortfolioItem[];
+  totalInvested: number;
+  totalValue: number;
+  totalReturn: number;
+}
+
+export interface PortfolioHistoryPoint {
+  value: number;
+  date: string;
+}
+
+export interface PortfolioPerformance {
+  history: PortfolioHistoryPoint[];
+  currentTotalValue: number;
+}

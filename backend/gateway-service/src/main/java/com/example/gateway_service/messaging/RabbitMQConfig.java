@@ -21,6 +21,17 @@ public class RabbitMQConfig {
     // Queue names for Gateway to receive events
     public static final String GATEWAY_ORDER_EVENT_QUEUE = "gateway.order.event.queue";
     
+    // RPC Queues
+    public static final String TRADE_HISTORY_REQUEST_QUEUE = "trade.history.request.queue";
+    public static final String TRADE_HISTORY_REPLY_QUEUE = "trade.history.reply.queue";
+    public static final String ACTIVE_ORDERS_REQUEST_QUEUE = "active.orders.request.queue";
+    public static final String MARKET_DATA_REQUEST_QUEUE = "market.data.request.queue";
+    public static final String STOCK_PERFORMANCE_RESPONSE_QUEUE = "stock.performance.response.queue";
+    
+    // Stock exchange for performance data
+    public static final String STOCK_EXCHANGE = "trading_data_exchange";
+    public static final String STOCK_PERFORMANCE_RESPONSE_KEY = "stock.performance.response";
+
     // Routing keys
     public static final String ORDER_PLACE_KEY = "order.place";
     public static final String ORDER_CANCEL_KEY = "order.cancel";
@@ -28,6 +39,9 @@ public class RabbitMQConfig {
     public static final String ORDER_CREATED_KEY = "order.created";
     public static final String ORDER_EXECUTED_KEY = "order.executed";
     public static final String ORDER_FAILED_KEY = "order.failed";
+    public static final String TRADE_HISTORY_KEY = "trade.history";
+    public static final String ACTIVE_ORDERS_KEY = "active.orders";
+    public static final String MARKET_DATA_KEY = "market.data";
     
     // Message converter for JSON serialization
     @Bean
@@ -56,6 +70,12 @@ public class RabbitMQConfig {
         return new TopicExchange(TRADING_EVENTS_EXCHANGE);
     }
     
+    // Stock Exchange (for performance data)
+    @Bean
+    public TopicExchange stockExchange() {
+        return new TopicExchange(STOCK_EXCHANGE);
+    }
+    
     // Queue for Gateway to receive order events
     @Bean
     public Queue gatewayOrderEventQueue() {
@@ -77,5 +97,67 @@ public class RabbitMQConfig {
                 .bind(gatewayOrderEventQueue())
                 .to(tradingEventsExchange())
                 .with(ORDER_FAILED_KEY);
+    }
+
+    @Bean
+    public Binding orderUpdateEventBinding() {
+        return BindingBuilder
+                .bind(gatewayOrderEventQueue())
+                .to(tradingEventsExchange())
+                .with(ORDER_UPDATE_KEY);
+    }
+    
+    // RPC Bindings
+    @Bean
+    public Queue tradeHistoryRequestQueue() {
+        return new Queue(TRADE_HISTORY_REQUEST_QUEUE);
+    }
+    
+    @Bean
+    public Binding tradeHistoryBinding() {
+        return BindingBuilder
+                .bind(tradeHistoryRequestQueue())
+                .to(tradingCommandsExchange())
+                .with(TRADE_HISTORY_KEY);
+    }
+
+    @Bean
+    public Queue activeOrdersRequestQueue() {
+        return new Queue(ACTIVE_ORDERS_REQUEST_QUEUE);
+    }
+
+    @Bean
+    public Binding activeOrdersBinding() {
+        return BindingBuilder
+                .bind(activeOrdersRequestQueue())
+                .to(tradingCommandsExchange())
+                .with(ACTIVE_ORDERS_KEY);
+    }
+
+    @Bean
+    public Queue marketDataRequestQueue() {
+        return new Queue(MARKET_DATA_REQUEST_QUEUE);
+    }
+
+    @Bean
+    public Binding marketDataBinding() {
+        return BindingBuilder
+                .bind(marketDataRequestQueue())
+                .to(tradingCommandsExchange())
+                .with(MARKET_DATA_KEY);
+    }
+    
+    // Stock Performance Response Queue
+    @Bean
+    public Queue stockPerformanceResponseQueue() {
+        return new Queue(STOCK_PERFORMANCE_RESPONSE_QUEUE, true);
+    }
+    
+    @Bean
+    public Binding stockPerformanceResponseBinding() {
+        return BindingBuilder
+                .bind(stockPerformanceResponseQueue())
+                .to(stockExchange())
+                .with(STOCK_PERFORMANCE_RESPONSE_KEY);
     }
 }

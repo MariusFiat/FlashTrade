@@ -30,7 +30,7 @@ public class OrderRequestListener {
     public void handleBuyOrder(BuyOrderRequest request) {
         System.out.println("Request for order: " + request.getOrderId());
 
-        User user = userRepository.findById(request.getUserId())
+        User user = userRepository.findByEmail(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         Wallet wallet = user.getUserDetails().getWallet();
@@ -64,7 +64,7 @@ public class OrderRequestListener {
     public void handleOrderClose(BuyOrderCloseRequest message) {
         System.out.println("Processing close for order: " + message.getOrderId() + " with status: " + message.getStatus());
 
-        User user = userRepository.findById(message.getUserId())
+        User user = userRepository.findByEmail(message.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
         Wallet wallet = user.getUserDetails().getWallet();
 
@@ -107,7 +107,7 @@ public class OrderRequestListener {
     @RabbitListener(queues = RabbitStockConfig.SELL_ORDER_QUEUE)
     @Transactional
     public void handleSellOrderRequest(SellOrderRequest request) {
-        User user = userRepository.findById(request.getUserId())
+        User user = userRepository.findByEmail(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         Optional<Portfolio> stockInPortfolio = user.getUserDetails().getPortfolioItems().stream()
@@ -137,7 +137,7 @@ public class OrderRequestListener {
     public void handleSellOrderClose(SellOrderCloseRequest request) {
         System.out.println("Closing Sell Order: " + request.getOrderId() + " | Status: " + request.getStatus());
 
-        User user = userRepository.findById(request.getUserId())
+        User user = userRepository.findByEmail(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         Wallet wallet = user.getUserDetails().getWallet();
