@@ -27,8 +27,8 @@ public class OrderController {
     
     @PostMapping
     public ResponseEntity<Map<String, String>> placeOrder(@RequestBody PlaceOrderCommand command) {
-        log.info("Received place order request: symbol={}, quantity={}, side={}",
-                command.getSymbol(), command.getQuantity(), command.getSide());
+        log.info("Received place order request: symbol={}, quantity={}",
+                command.getSymbol(), command.getQuantity());
         
         // Publish command to trading service via RabbitMQ
         String correlationId = orderCommandPublisher.publishPlaceOrderCommand(command);

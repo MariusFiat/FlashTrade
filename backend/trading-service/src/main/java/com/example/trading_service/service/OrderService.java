@@ -103,10 +103,9 @@ public class OrderService {
             for (PlaceOrderCommand command : commands) {
                 try{
                     log.info(
-                            "START processing order: correlationId={}, userId={}, side={}, qty={}, symbol={}",
+                            "START processing order: correlationId={}, userId={}, qty={}, symbol={}",
                             command.getCorrelationId(),
                             command.getUserId(),
-                            command.getSide(),
                             command.getQuantity(),
                             symbol
                     );
@@ -115,7 +114,6 @@ public class OrderService {
                     order.setUserId(command.getUserId());
                     order.setSymbol(symbol);
                     order.setOriginalQty(command.getQuantity());
-                    order.setSide(OrderSide.valueOf(command.getSide()));
                     order.setFilledQty(0);
                     order.setStatus(OrderStatus.PENDING_WALLET);
                     order.setPrice(currentPrice);

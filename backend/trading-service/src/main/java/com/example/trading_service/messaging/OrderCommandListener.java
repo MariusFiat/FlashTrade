@@ -44,11 +44,10 @@ public class OrderCommandListener {
 
             validCommands.forEach(command ->
                     log.info(
-                            "Processing order: userId={}, symbol={}, quantity={}, side={}, correlationId={}",
+                            "Processing order: userId={}, symbol={}, quantity={}, correlationId={}",
                             command.getUserId(),
                             command.getSymbol(),
                             command.getQuantity(),
-                            command.getSide(),
                             command.getCorrelationId()
                     )
             );
