@@ -14,13 +14,19 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RabbitMQConfig {
 
+
     // Exchange names
     public static final String TRADING_COMMANDS_EXCHANGE = "trading.commands.exchange";
     public static final String TRADING_EVENTS_EXCHANGE = "trading.events.exchange";
 
+
     // Queue names
     public static final String ORDER_COMMAND_QUEUE = "order.command.queue";
     public static final String ORDER_EVENT_QUEUE = "order.event.queue";
+    public static final String ORDER_CANCEL_QUEUE  = "order.cancel.queue";
+    public static final String TRADE_HISTORY_REQUEST_QUEUE = "trade.history.request.queue";
+    public static final String ACTIVE_ORDERS_REQUEST_QUEUE = "active.orders.request.queue";
+    public static final String MARKET_DATA_REQUEST_QUEUE = "market.data.request.queue";
 
     // Routing keys
     public static final String ORDER_PLACE_KEY = "order.place";
@@ -29,6 +35,81 @@ public class RabbitMQConfig {
     public static final String ORDER_CREATED_KEY = "order.created";
     public static final String ORDER_EXECUTED_KEY = "order.executed";
     public static final String ORDER_FAILED_KEY = "order.failed";
+    public static final String TRADE_HISTORY_KEY = "trade.history";
+    public static final String ACTIVE_ORDERS_KEY = "active.orders";
+    public static final String MARKET_DATA_KEY = "market.data";
+
+    // Wallet Verification Queues & Exchanges
+    public static final String BUY_ORDER_QUEUE = "buy_order_request_queue";
+    public static final String ORDER_RESPONSE_EXCHANGE = "buy_order_response_exchange";
+    public static final String ORDER_RESPONSE_ROUTING_KEY = "buy_order.response.key";
+
+    public static final String SELL_ORDER_QUEUE = "sell_order_request_queue";
+    public static final String SELL_RESPONSE_EXCHANGE = "sell_order_response_exchange";
+    public static final String SELL_RESPONSE_ROUTING_KEY = "sell_order.response.key";
+
+    public static final String ORDER_RESPONSE_QUEUE = "trading_order_response_queue";
+    public static final String SELL_RESPONSE_QUEUE = "trading_sell_response_queue";
+
+    public static final String BUY_ORDER_CLOSE_QUEUE = "buy_order_close_queue";
+    public static final String SELL_ORDER_CLOSE_QUEUE = "sell_order_close_queue";
+
+    // Wallet Verification Beans
+    @Bean
+    public Queue buyOrderQueue() {
+        return new Queue(BUY_ORDER_QUEUE);
+    }
+
+    @Bean
+    public TopicExchange orderResponseExchange() {
+        return new TopicExchange(ORDER_RESPONSE_EXCHANGE);
+    }
+
+    @Bean
+    public Queue orderResponseQueue() {
+        return new Queue(ORDER_RESPONSE_QUEUE);
+    }
+
+    @Bean
+    public Binding orderResponseBinding() {
+        return BindingBuilder.bind(orderResponseQueue())
+                .to(orderResponseExchange())
+                .with(ORDER_RESPONSE_ROUTING_KEY);
+    }
+
+    @Bean
+    public Queue sellOrderQueue() {
+        return new Queue(SELL_ORDER_QUEUE);
+    }
+
+    @Bean
+    public TopicExchange sellResponseExchange() {
+        return new TopicExchange(SELL_RESPONSE_EXCHANGE);
+    }
+
+    @Bean
+    public Queue sellResponseQueue() {
+        return new Queue(SELL_RESPONSE_QUEUE);
+    }
+
+    @Bean
+    public Binding sellResponseBinding() {
+        return BindingBuilder.bind(sellResponseQueue())
+                .to(sellResponseExchange())
+                .with(SELL_RESPONSE_ROUTING_KEY);
+    }
+
+    @Bean
+    public Queue buyOrderCloseQueue() {
+        return new Queue(BUY_ORDER_CLOSE_QUEUE, true);
+    }
+
+    @Bean
+    public Queue sellOrderCloseQueue() {
+        return new Queue(SELL_ORDER_CLOSE_QUEUE, true);
+    }
+
+    //Stock price update -> user_service end
 
     //Stock price update -> user_service
     public static final String STOCK_DATA_QUEUE = "stock_info_queue";
@@ -86,6 +167,22 @@ public class RabbitMQConfig {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(jsonMessageConverter());
+        factory.setBatchListener(true);
+        factory.setConsumerBatchEnabled(true);
+        return factory;
+    }
+
+    @Bean(name = "singleListenerFactory")
+    public SimpleRabbitListenerContainerFactory singleListenerFactory(
+            ConnectionFactory connectionFactory) {
+
+        SimpleRabbitListenerContainerFactory factory =
+                new SimpleRabbitListenerContainerFactory();
+
+        factory.setConnectionFactory(connectionFactory);
+        factory.setMessageConverter(jsonMessageConverter());
+        factory.setDefaultRequeueRejected(false);
+
         return factory;
     }
 
@@ -95,16 +192,38 @@ public class RabbitMQConfig {
         return new TopicExchange(TRADING_COMMANDS_EXCHANGE);
     }
 
+
     // Events Exchange (Trading Service -> Gateway/Other Services)
     @Bean
     public TopicExchange tradingEventsExchange() {
         return new TopicExchange(TRADING_EVENTS_EXCHANGE);
     }
 
+
     // Command Queue for receiving orders from gateway
     @Bean
     public Queue orderCommandQueue() {
         return new Queue(ORDER_COMMAND_QUEUE, true);
+    }
+
+    @Bean
+    public Queue orderCancelQueue() {
+        return new Queue(ORDER_CANCEL_QUEUE, true);
+    }
+    
+    @Bean
+    public Queue tradeHistoryRequestQueue() {
+        return new Queue(TRADE_HISTORY_REQUEST_QUEUE);
+    }
+
+    @Bean
+    public Queue activeOrdersRequestQueue() {
+        return new Queue(ACTIVE_ORDERS_REQUEST_QUEUE);
+    }
+
+    @Bean
+    public Queue marketDataRequestQueue() {
+        return new Queue(MARKET_DATA_REQUEST_QUEUE);
     }
 
     // Binding: Commands Exchange -> Order Command Queue
@@ -116,27 +235,37 @@ public class RabbitMQConfig {
                 .with(ORDER_PLACE_KEY);
     }
 
+
     @Bean
     public Binding orderCancelBinding() {
         return BindingBuilder
-                .bind(orderCommandQueue())
+                .bind(orderCancelQueue())
                 .to(tradingCommandsExchange())
                 .with(ORDER_CANCEL_KEY);
     }
-
+    
     @Bean
-    public Binding orderUpdateBinding() {
+    public Binding tradeHistoryBinding() {
         return BindingBuilder
-                .bind(orderCommandQueue())
+                .bind(tradeHistoryRequestQueue())
                 .to(tradingCommandsExchange())
-                .with(ORDER_UPDATE_KEY);
+                .with(TRADE_HISTORY_KEY);
     }
 
     @Bean
-    public Binding performanceResponseBinding() {
+    public Binding activeOrdersBinding() {
         return BindingBuilder
-                .bind(performanceResponseQueue())
-                .to(stockExchange())
-                .with(STOCK_PERFORMANCE_RESPONSE_KEY);
+                .bind(activeOrdersRequestQueue())
+                .to(tradingCommandsExchange())
+                .with(ACTIVE_ORDERS_KEY);
     }
+
+    @Bean
+    public Binding marketDataBinding() {
+        return BindingBuilder
+                .bind(marketDataRequestQueue())
+                .to(tradingCommandsExchange())
+                .with(MARKET_DATA_KEY);
+    }
+
 }

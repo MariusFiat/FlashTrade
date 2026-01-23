@@ -19,7 +19,7 @@ public class StockPerformanceListener {
     @Autowired
     private RabbitTemplate rabbitTemplate;
 
-    @RabbitListener(queues = RabbitMQConfig.STOCK_PERFORMANCE_REQUEST_QUEUE)
+    @RabbitListener(queues = RabbitMQConfig.STOCK_PERFORMANCE_REQUEST_QUEUE, containerFactory = "singleListenerFactory")
     public void handlePerformanceRequest(StockPerformanceRequest request) {
         try {
             StockPerformanceDTO performanceData = stockPerformanceService.getStockPerformance(

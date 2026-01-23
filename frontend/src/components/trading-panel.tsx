@@ -4,15 +4,117 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { orderApi } from "@/services/orderApi"
+import { stockApi } from "@/services/stockApi"
+import { userApi } from "@/services/userApi"
+import { useAuth } from "@/hooks/useAuth"
+import { useToast } from "@/hooks/use-toast"
+import { Loader2 } from "lucide-react"
 
 export function TradingPanel() {
   const [orderType, setOrderType] = useState<"buy" | "sell">("buy")
   const [quantity, setQuantity] = useState("")
-  const [price, setPrice] = useState("151.89")
+  const [price, setPrice] = useState("0.00")
+  const [availableBalance, setAvailableBalance] = useState(0)
+  const [availableShares, setAvailableShares] = useState(0)
+  const [isLoading, setIsLoading] = useState(false)
+  const [isFetchingData, setIsFetchingData] = useState(true)
+  const [symbol] = useState("AAPL") // This should be dynamic based on selected stock
+  const { user } = useAuth()
+  const { toast } = useToast()
 
-  const handleTrade = () => {
-    console.log(`${orderType} order:`, { quantity, price })
+  useEffect(() => {
+    fetchTradingData()
+  }, [symbol])
+
+  const fetchTradingData = async () => {
+    try {
+      setIsFetchingData(true)
+      const [stockData, walletData, portfolioData] = await Promise.all([
+        stockApi.getStockPerformance(symbol, '1d'),
+        userApi.getWalletInfo(),
+        userApi.getPortfolio()
+      ])
+      
+      setPrice(stockData.currentPrice.toFixed(2))
+      setAvailableBalance(walletData.balance)
+      
+      // Find the available shares for this symbol
+      const holding = portfolioData.items.find(item => item.stock === symbol)
+      setAvailableShares(holding ? holding.shares : 0)
+    } catch (error) {
+      console.error('Failed to fetch trading data:', error)
+      toast({
+        title: "Error",
+        description: "Failed to load trading data",
+        variant: "destructive",
+      })
+    } finally {
+      setIsFetchingData(false)
+    }
+  }
+
+  const handleTrade = async () => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to place an order",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!quantity || Number.parseFloat(quantity) <= 0) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid quantity",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      await orderApi.placeOrder({
+        userId: user.email,
+        symbol: symbol,
+        side: orderType === "buy" ? "BUY" : "SELL",
+        quantity: Number.parseFloat(quantity),
+        price: Number.parseFloat(price),
+      })
+
+      toast({
+        title: "Order Placed",
+        description: `${orderType.toUpperCase()} order for ${quantity} ${symbol} shares sent to trading service`,
+      })
+
+      // Reset form
+      setQuantity("")
+      // Refresh trading data
+      fetchTradingData()
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to place order",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  if (isFetchingData) {
+    return (
+      <Card className="bg-card border-border/50">
+        <CardHeader>
+          <CardTitle>Quick Trade</CardTitle>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
@@ -55,8 +157,8 @@ export function TradingPanel() {
                 type="number"
                 placeholder="0.00"
                 value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                className="bg-secondary border-border"
+                disabled
+                className="bg-secondary border-border opacity-75 cursor-not-allowed"
               />
             </div>
             <div className="bg-secondary/50 p-3 rounded-lg space-y-2">
@@ -68,11 +170,11 @@ export function TradingPanel() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Available Balance</span>
-                <span className="font-medium">$25,430.00</span>
+                <span className="font-medium">${availableBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
             </div>
-            <Button className="w-full bg-primary hover:bg-green-700 text-white" onClick={handleTrade}>
-              Buy AAPL
+            <Button className="w-full bg-primary hover:bg-green-700 text-white" onClick={handleTrade} disabled={isLoading}>
+              {isLoading ? "Placing Order..." : `Buy ${symbol}`}
             </Button>
           </TabsContent>
           <TabsContent value="sell" className="space-y-4 mt-0">
@@ -86,7 +188,7 @@ export function TradingPanel() {
                 onChange={(e) => setQuantity(e.target.value)}
                 className="bg-secondary border-border"
               />
-              <p className="text-xs text-muted-foreground">Available: 50 shares</p>
+              <p className="text-xs text-muted-foreground">Available: {availableShares.toFixed(2)} shares</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="sell-price">Price per share</Label>
@@ -95,8 +197,8 @@ export function TradingPanel() {
                 type="number"
                 placeholder="0.00"
                 value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                className="bg-secondary border-border"
+                disabled
+                className="bg-secondary border-border opacity-75 cursor-not-allowed"
               />
             </div>
             <div className="bg-secondary/50 p-3 rounded-lg space-y-2">
@@ -107,15 +209,16 @@ export function TradingPanel() {
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Est. Profit/Loss</span>
-                <span className="font-medium text-green-500">+$234.50</span>
+                <span className="text-muted-foreground">Available Balance</span>
+                <span className="font-medium">${availableBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
             </div>
             <Button
               className="w-full bg-primary hover:bg-red-700 text-white"
               onClick={handleTrade}
+              disabled={isLoading}
             >
-              Sell AAPL
+              {isLoading ? "Placing Order..." : `Sell ${symbol}`}
             </Button>
           </TabsContent>
         </Tabs>

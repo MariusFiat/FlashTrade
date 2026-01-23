@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class BuyOrderRequest {
     private String orderId;
-    private Long userId;
+    private String userId;
     private String stockSymbol;
     private Double quantity;
     private Double priceAtOrder;
