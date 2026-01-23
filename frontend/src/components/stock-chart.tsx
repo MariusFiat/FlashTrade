@@ -5,8 +5,10 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Area, AreaChart } from "recharts"
 import { ArrowUp, ArrowDown, Check, ChevronsUpDown } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { cn } from "@/lib/utils"
+import { useWebSocket } from "@/hooks/useWebSocket"
+import { TransactionUpdate } from "@/services/websocket"
 
 const timeframes = ["1D", "1W", "1M", "3M", "1Y", "ALL"]
 
@@ -28,6 +30,26 @@ export function StockChart() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
+
+  const handleTransactionUpdate = useCallback((update: TransactionUpdate) => {
+    console.log('Transaction update received in stock chart:', update);
+    // Only update if the transaction is for the currently selected stock
+    if (update.symbol === selectedStock && update.status === 'SUCCESS') {
+      setData(prev => {
+        if (prev.length === 0) return prev;
+        const newData = [...prev];
+        const lastPoint = newData[newData.length - 1];
+        // Update the latest price point with the transaction price
+        newData[newData.length - 1] = {
+          ...lastPoint,
+          price: update.price
+        };
+        return newData;
+      });
+    }
+  }, [selectedStock]);
+
+  useWebSocket(handleTransactionUpdate);
 
   useEffect(() => {
     const loadStocks = async () => {
