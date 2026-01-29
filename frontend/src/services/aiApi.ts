@@ -302,6 +302,78 @@ class AIApiService {
     }
   }
 
+  /**
+   * Get Prediction History
+   */
+  async getPredictionHistory(symbol: string, limit: number = 10): Promise<PredictionHistory[]> {
+    const response = await fetch(`${this.baseURL}/api/ai/predictions/history/${symbol}?limit=${limit}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to get prediction history for ${symbol}`);
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Get Sentiment History
+   */
+  async getSentimentHistory(symbol: string, limit: number = 10): Promise<SentimentHistory[]> {
+    const response = await fetch(`${this.baseURL}/api/ai/sentiment/history/${symbol}?limit=${limit}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to get sentiment history for ${symbol}`);
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Get All Predictions (for admin/debugging)
+   */
+  async getAllPredictions(limit: number = 50): Promise<PredictionHistory[]> {
+    const response = await fetch(`${this.baseURL}/api/ai/predictions/all?limit=${limit}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to get all predictions');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Get All Sentiments (for admin/debugging)
+   */
+  async getAllSentiments(limit: number = 50): Promise<SentimentHistory[]> {
+    const response = await fetch(`${this.baseURL}/api/ai/sentiment/all?limit=${limit}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to get all sentiments');
+    }
+
+    return response.json();
+  }
+
   async sendChatMessage(message: string, context?: { symbols?: string[] }): Promise<ChatResponse> {
     try {
       // For now, we'll create intelligent responses based on the message content
