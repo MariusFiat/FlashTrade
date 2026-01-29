@@ -75,6 +75,26 @@ services:
       - rabbitmq
       - user-service
       - trading-service
+      - ai-service
+    restart: unless-stopped
+    networks:
+      - flashtrade-network
+
+  ml-prediction-service:
+    build:
+      context: ./ai-service/ml-prediction-service
+      dockerfile: Dockerfile
+    container_name: ml-prediction-service
+    ports:
+      - "8000:8000"      # FastAPI port
+    environment:
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=INFO
+      - MODEL_CACHE_DIR=/app/models/cache
+      - DATA_CACHE_DIR=/app/data/cache
+    volumes:
+      - ml-models-cache:/app/models/cache
+      - ml-data-cache:/app/data/cache
     restart: unless-stopped
     networks:
       - flashtrade-network
@@ -94,8 +114,10 @@ services:
       - SPRING_RABBITMQ_PORT=5672
       - PYTHON_EXECUTABLE=python3
       - NEWS_API_KEY=${NEWS_API_KEY}
+      - ML_SERVICE_URL=http://ml-prediction-service:8000
     depends_on:
       - rabbitmq
+      - ml-prediction-service
     restart: unless-stopped
     networks:
       - flashtrade-network
@@ -103,3 +125,10 @@ services:
 networks:
   flashtrade-network:
     driver: bridge
+  
+# NEW: Volumes for ML model and data caching
+volumes:
+  ml-models-cache: #Persists trained Prophet models
+    driver: local
+  ml-data-cache: #Caches downloaded stock data to reduce API calls
+    driver: local

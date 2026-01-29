@@ -39,7 +39,7 @@ public class SentimentAnalysisService {
         log.info("Analyzing sentiment for symbol: {}", symbol);
         
         // STEP 1: Fetch latest news articles
-        List<NewsArticle> articles = dataFetchService.fetchNews(symbol, 10);
+        List<NewsArticle> articles = new ArrayList<>(); // dataFetchService.fetchNews(symbol, 10);
         
         if (articles.isEmpty()) {
             return createNeutralResponse(symbol);

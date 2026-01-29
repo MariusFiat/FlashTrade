@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -33,6 +32,7 @@ public class DataFetchService {
      * @return Map with "dates" and "prices" lists
      * @throws DataFetchException if data cannot be fetched
      */
+    @SuppressWarnings("null")
     public Map<String, List<?>> fetchHistoricalPrices(String symbol, int days) {
         log.info("Fetching {} days of historical data for {}", days, symbol);
         
@@ -83,11 +83,11 @@ public class DataFetchService {
             
             log.info("Successfully fetched {} data points for {}", cleanDates.size(), symbol);
             
-            Map<String, List<?>> result = new HashMap<>();
-            result.put("dates", cleanDates);
-            result.put("prices", cleanPrices);
+            Map<String, List<?>> results = new HashMap<>();
+            results.put("dates", cleanDates);
+            results.put("prices", cleanPrices);
             
-            return result;
+            return results;
             
         } catch (Exception e) {
             log.error("Error fetching data for {}: {}", symbol, e.getMessage());

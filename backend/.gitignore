@@ -4,5 +4,10 @@
 .env.*.local
 .vscode
 
+# Python virtual environments (best practice)
+venv/
+*/venv/
+**/venv/
+
 # Local development properties
 **/application-local.properties
