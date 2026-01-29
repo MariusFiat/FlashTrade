@@ -1,164 +1,172 @@
 package com.example.ai_service.service;
 
-import com.example.ai_service.dto.NewsArticle;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+import com.example.ai_service.dto.UserStockData;
+import com.example.ai_service.exception.DataFetchException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class DataFetchService {
-    private static final Logger log = LoggerFactory.getLogger(DataFetchService.class);
     
-    @Value("${news.api.key:demo}")
-    private String newsApiKey;
-    
-    @Value("${alpha.vantage.api.key:demo}")
-    private String alphaVantageKey;
+    private static final String YAHOO_FINANCE_URL = "https://query1.finance.yahoo.com/v8/finance/chart/";
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     
     private final WebClient webClient;
-    private final Random random = new Random();
     
     public DataFetchService() {
         this.webClient = WebClient.builder().build();
     }
     
     /**
-     * Fetches historical stock prices
-     * For demo purposes, generates mock data
-     * In production, use Yahoo Finance API or Alpha Vantage
+     * Fetches historical stock prices from Yahoo Finance.
+     * 
+     * @param symbol Stock ticker symbol (e.g., "AAPL")
+     * @param days Number of days of historical data to fetch
+     * @return Map with "dates" and "prices" lists
+     * @throws DataFetchException if data cannot be fetched
      */
-    public List<Double> getHistoricalPrices(String symbol, int days) {
-        log.info("Fetching historical prices for {} ({} days)", symbol, days);
-        
-        // TODO: Replace with real API call
-        // For now, generate mock data
-        List<Double> prices = new ArrayList<>();
-        double basePrice = 150.0 + (random.nextDouble() * 50); // Random base price
-        
-        for (int i = 0; i < days; i++) {
-            double change = (random.nextDouble() - 0.5) * 5; // Random daily change
-            basePrice += change;
-            prices.add(Math.max(10.0, basePrice)); // Ensure price stays positive
-        }
-        
-        return prices;
-    }
-    
-    /**
-     * Fetches news articles for a stock symbol
-     */
-    public List<NewsArticle> fetchNews(String symbol, int maxArticles) {
-        log.info("Fetching news for symbol: {}", symbol);
-        
-        if ("demo".equals(newsApiKey)) {
-            return generateMockNews(symbol, maxArticles);
-        }
+    public Map<String, List<?>> fetchHistoricalPrices(String symbol, int days) {
+        log.info("Fetching {} days of historical data for {}", days, symbol);
         
         try {
-            String url = String.format(
-                "https://newsapi.org/v2/everything?q=%s&apiKey=%s&pageSize=%d&language=en",
-                symbol, newsApiKey, maxArticles
-            );
+            long endTime = System.currentTimeMillis() / 1000;
+            long startTime = endTime - (days * 24 * 60 * 60);
             
-            String response = webClient.get()
-                .uri(url)
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
+            String url = String.format("%s%s?period1=%d&period2=%d&interval=1d",
+                    YAHOO_FINANCE_URL, symbol, startTime, endTime);
             
-            return parseNewsResponse(response);
+            Map<String, Object> response = webClient.get()
+                    .uri(url)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .block();
             
-        } catch (Exception e) {
-            log.error("Failed to fetch news for {}", symbol, e);
-            return generateMockNews(symbol, maxArticles);
-        }
-    }
-    
-    private List<NewsArticle> parseNewsResponse(String jsonResponse) {
-        List<NewsArticle> articles = new ArrayList<>();
-        
-        try {
-            JsonObject root = JsonParser.parseString(jsonResponse).getAsJsonObject();
-            JsonArray articlesArray = root.getAsJsonArray("articles");
-            
-            for (JsonElement element : articlesArray) {
-                JsonObject article = element.getAsJsonObject();
-                
-                articles.add(NewsArticle.builder()
-                    .title(getStringOrDefault(article, "title", "No title"))
-                    .content(getStringOrDefault(article, "description", "No content"))
-                    .source(getStringOrDefault(article.getAsJsonObject("source"), "name", "Unknown"))
-                    .url(getStringOrDefault(article, "url", ""))
-                    .publishedAt(Instant.now().toEpochMilli())
-                    .build());
+            if (response == null || !response.containsKey("chart")) {
+                throw new DataFetchException("Invalid response from Yahoo Finance");
             }
+            
+            Map<String, Object> chart = (Map<String, Object>) response.get("chart");
+            List<Map<String, Object>> result = (List<Map<String, Object>>) chart.get("result");
+            
+            if (result == null || result.isEmpty()) {
+                throw new DataFetchException("No data returned for symbol: " + symbol);
+            }
+            
+            Map<String, Object> data = result.get(0);
+            List<Long> timestamps = (List<Long>) ((Map<String, Object>) data.get("timestamp")).get("timestamp");
+            Map<String, Object> indicators = (Map<String, Object>) data.get("indicators");
+            List<Map<String, Object>> quote = (List<Map<String, Object>>) indicators.get("quote");
+            List<Double> closePrices = (List<Double>) quote.get(0).get("close");
+            
+            List<String> dates = timestamps.stream()
+                    .map(ts -> LocalDate.ofEpochDay(ts / 86400).format(DATE_FORMATTER))
+                    .collect(Collectors.toList());
+            
+            // Remove null values
+            List<String> cleanDates = new ArrayList<>();
+            List<Double> cleanPrices = new ArrayList<>();
+            
+            for (int i = 0; i < dates.size(); i++) {
+                if (closePrices.get(i) != null) {
+                    cleanDates.add(dates.get(i));
+                    cleanPrices.add(closePrices.get(i));
+                }
+            }
+            
+            log.info("Successfully fetched {} data points for {}", cleanDates.size(), symbol);
+            
+            Map<String, List<?>> result = new HashMap<>();
+            result.put("dates", cleanDates);
+            result.put("prices", cleanPrices);
+            
+            return result;
+            
         } catch (Exception e) {
-            log.error("Failed to parse news response", e);
-        }
-        
-        return articles;
-    }
-    
-    private String getStringOrDefault(JsonObject obj, String key, String defaultValue) {
-        try {
-            return obj.has(key) && !obj.get(key).isJsonNull() 
-                ? obj.get(key).getAsString() 
-                : defaultValue;
-        } catch (Exception e) {
-            return defaultValue;
+            log.error("Error fetching data for {}: {}", symbol, e.getMessage());
+            throw new DataFetchException("Failed to fetch historical data: " + e.getMessage());
         }
     }
     
     /**
-     * Generates mock news for testing
+     * Merges Yahoo Finance data with user-provided data.
+     * User data takes precedence for overlapping dates.
+     * 
+     * @param yahooData Data from Yahoo Finance
+     * @param userData User-provided data
+     * @return Merged and sorted data
      */
-    private List<NewsArticle> generateMockNews(String symbol, int count) {
-        List<NewsArticle> articles = new ArrayList<>();
-        String[] sentiments = {"positive", "negative", "neutral"};
-        String[] templates = {
-            "%s shows strong performance in Q4 earnings",
-            "%s faces challenges in competitive market",
-            "%s announces new product line expansion",
-            "Analysts remain %s on %s stock outlook",
-            "%s stock experiences volatility amid market uncertainty"
-        };
-        
-        for (int i = 0; i < count; i++) {
-            String sentiment = sentiments[random.nextInt(sentiments.length)];
-            String template = templates[random.nextInt(templates.length)];
-            String title = String.format(template, symbol, sentiment);
-            
-            articles.add(NewsArticle.builder()
-                .title(title)
-                .content(title + ". " + generateMockContent(sentiment))
-                .source("Mock News Source")
-                .url("https://example.com/news/" + i)
-                .publishedAt(Instant.now().minusSeconds(i * 3600).toEpochMilli())
-                .build());
+    public Map<String, List<?>> mergeUserData(Map<String, List<?>> yahooData, UserStockData userData) {
+        if (userData == null || userData.getDates() == null || userData.getDates().isEmpty()) {
+            return yahooData;
         }
         
-        return articles;
+        log.info("Merging user data: {} points", userData.getDates().size());
+        
+        userData.validate();
+        
+        // Create map for deduplication (user data takes precedence)
+        Map<String, Double> priceMap = new TreeMap<>();
+        
+        // Add Yahoo data first
+        List<String> yahooDates = (List<String>) yahooData.get("dates");
+        List<Double> yahooPrices = (List<Double>) yahooData.get("prices");
+        
+        for (int i = 0; i < yahooDates.size(); i++) {
+            priceMap.put(yahooDates.get(i), yahooPrices.get(i));
+        }
+        
+        // Override with user data
+        for (int i = 0; i < userData.getDates().size(); i++) {
+            priceMap.put(userData.getDates().get(i), userData.getPrices().get(i));
+        }
+        
+        // Convert back to lists
+        List<String> mergedDates = new ArrayList<>(priceMap.keySet());
+        List<Double> mergedPrices = new ArrayList<>(priceMap.values());
+        
+        log.info("Merged data: {} total points", mergedDates.size());
+        
+        Map<String, List<?>> result = new HashMap<>();
+        result.put("dates", mergedDates);
+        result.put("prices", mergedPrices);
+        
+        return result;
     }
     
-    private String generateMockContent(String sentiment) {
-        switch (sentiment) {
-            case "positive":
-                return "Market analysts are optimistic about future growth prospects and strong fundamentals.";
-            case "negative":
-                return "Concerns arise over declining market share and increased competition in the sector.";
-            default:
-                return "Market observers maintain a cautious stance pending further developments.";
+    /**
+     * Validates that data meets minimum requirements for prediction.
+     * 
+     * @param data Historical data to validate
+     * @throws DataFetchException if data is insufficient
+     */
+    public void validateData(Map<String, List<?>> data) {
+        List<String> dates = (List<String>) data.get("dates");
+        List<Double> prices = (List<Double>) data.get("prices");
+        
+        if (dates == null || dates.isEmpty()) {
+            throw new DataFetchException("No dates in historical data");
         }
+        
+        if (prices == null || prices.isEmpty()) {
+            throw new DataFetchException("No prices in historical data");
+        }
+        
+        if (dates.size() < 30) {
+            throw new DataFetchException("Insufficient data: minimum 30 days required, got " + dates.size());
+        }
+        
+        if (dates.size() != prices.size()) {
+            throw new DataFetchException("Data mismatch: dates and prices have different lengths");
+        }
+        
+        log.info("Data validation passed: {} data points", dates.size());
     }
 }
